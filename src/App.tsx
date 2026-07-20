@@ -11,9 +11,9 @@ const SOCIALS = {
 };
 
 const SHOWS = [
-  { name: "Circuito Interno · Manhãs", schedule: "Seg a Sex · 10h00 – 12h00" },
-  { name: "Circuito Interno · Tardes", schedule: "Seg a Sex · 16h00 – 18h00" },
-  { name: "Circuito Interno · Fim de Semana", schedule: "Sábado · 15h00 – 17h00" },
+  { name: "Circuito Interno - Romântico", schedule: "Terça a Quinta - 22h00 às 24h00" },
+  { name: "Circuito Interno - Rock & Indie Alternativo", schedule: "Sexta - 22h00 às 24h00" },
+  { name: "Circuito Interno - Grandes Clássicos", schedule: "Sábado - 13h00 às 15h00" }
 ];
 
 export default function App() {
@@ -23,6 +23,7 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
 
   useEffect(() => {
     audioRef.current = new Audio();
@@ -192,6 +193,55 @@ export default function App() {
             © Rádio Marcoense · 93.3 FM
           </p>
         </section>
+
+        {/* BOTÃO DE INSTALAÇÃO DA APP */}
+      <div className="mt-6 text-center">
+        <button 
+          onClick={() => setShowInstallHelp(true)}
+          className="inline-flex items-center gap-2 bg-neutral-800 text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-neutral-700 transition"
+        >
+          📱 Instalar App no Telemóvel
+        </button>
+      </div>
+
+      {/* PAINEL FLUTUANTE DE AJUDA À INSTALAÇÃO */}
+      {showInstallHelp && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full relative">
+            <button 
+              onClick={() => setShowInstallHelp(false)}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-white text-lg font-bold"
+            >
+              ✕
+            </button>
+            
+            <h3 className="text-base font-bold text-white text-center mb-4">
+              Como Instalar a App da Rádio
+            </h3>
+            
+            <div className="space-y-4 text-xs text-neutral-300">
+              <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-800">
+                <p className="font-bold text-white mb-1">🍏 No iPhone (Safari):</p>
+                <p>1. Clique no botão de <strong>Partilhar</strong> (quadrado com seta para cima) na barra inferior do Safari.</p>
+                <p>2. Faça scroll para baixo e escolha <strong>"Adicionar ao Ecrã Principal"</strong>.</p>
+              </div>
+
+              <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-800">
+                <p className="font-bold text-white mb-1">🤖 No Android (Chrome):</p>
+                <p>1. Clique nos <strong>3 pontinhos</strong> no canto superior direito.</p>
+                <p>2. Selecione a opção <strong>"Instalar aplicação"</strong> ou "Adicionar ao ecrã principal".</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowInstallHelp(false)}
+              className="mt-5 w-full bg-white text-black font-bold text-xs py-2.5 rounded-xl hover:bg-neutral-200 transition"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>
