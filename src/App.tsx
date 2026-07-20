@@ -23,9 +23,26 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showInstallHelp, setShowInstallHelp] = useState(false);
+  
+  // Lógica do botão de instalação automática
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
+    // Deteta se o utilizador está no Android
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('android')) {
+      setIsAndroid(true);
+    }
+
+    // Captura o evento de instalação do Chrome/Android
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     audioRef.current = new Audio();
     const a = audioRef.current;
 
@@ -46,6 +63,7 @@ export default function App() {
     a.addEventListener("error", handleError);
 
     return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       a.pause();
       a.removeEventListener("playing", handlePlaying);
       a.removeEventListener("pause", handlePause);
@@ -83,6 +101,22 @@ export default function App() {
       setPlaying(false);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInstallClick = async () => {
+    if (isAndroid && deferredPrompt) {
+      // No Android abre logo a caixinha nativa para instalar direto!
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else if (!isAndroid) {
+      // No iPhone dá o aviso direto da Apple
+      alert("No iPhone, clique no botão de partilhar do Safari (ao fundo do ecrã) e escolha 'Adicionar ao Ecrã Principal' 📲");
+    } else {
+      alert("A aplicação já está instalada ou o navegador não suporta a instalação direta.");
     }
   };
 
@@ -183,7 +217,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="pt-4 pb-8 shrink-0">
+        <section className="py-4 shrink-0">
           <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">Contactos do programa</h2>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5">
             <ContactRow icon={<Mail className="size-4" />} label="Email" value="circuitointerno@marcoensefm.com" href="mailto:circuitointerno@marcoensefm.com" />
@@ -194,54 +228,15 @@ export default function App() {
           </p>
         </section>
 
-        {/* BOTÃO DE INSTALAÇÃO DA APP */}
-      <div className="mt-6 text-center">
-        <button 
-          onClick={() => setShowInstallHelp(true)}
-          className="inline-flex items-center gap-2 bg-neutral-800 text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-neutral-700 transition"
-        >
-          📱 Instalar App no Telemóvel
-        </button>
-      </div>
-
-      {/* PAINEL FLUTUANTE DE AJUDA À INSTALAÇÃO */}
-      {showInstallHelp && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full relative">
-            <button 
-              onClick={() => setShowInstallHelp(false)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white text-lg font-bold"
-            >
-              ✕
-            </button>
-            
-            <h3 className="text-base font-bold text-white text-center mb-4">
-              Como Instalar a App da Rádio
-            </h3>
-            
-            <div className="space-y-4 text-xs text-neutral-300">
-              <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-800">
-                <p className="font-bold text-white mb-1">🍏 No iPhone (Safari):</p>
-                <p>1. Clique no botão de <strong>Partilhar</strong> (quadrado com seta para cima) na barra inferior do Safari.</p>
-                <p>2. Faça scroll para baixo e escolha <strong>"Adicionar ao Ecrã Principal"</strong>.</p>
-              </div>
-
-              <div className="bg-neutral-800/50 p-3 rounded-xl border border-neutral-800">
-                <p className="font-bold text-white mb-1">🤖 No Android (Chrome):</p>
-                <p>1. Clique nos <strong>3 pontinhos</strong> no canto superior direito.</p>
-                <p>2. Selecione a opção <strong>"Instalar aplicação"</strong> ou "Adicionar ao ecrã principal".</p>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => setShowInstallHelp(false)}
-              className="mt-5 w-full bg-white text-black font-bold text-xs py-2.5 rounded-xl hover:bg-neutral-200 transition"
-            >
-              Entendido
-            </button>
-          </div>
+        {/* NOVO BOTÃO INTELIGENTE DE INSTALAÇÃO AUTOMÁTICA */}
+        <div className="mt-4 mb-8 text-center shrink-0">
+          <button 
+            onClick={handleInstallClick}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white text-xs font-bold py-3.5 px-6 rounded-xl shadow-lg transition active:scale-[0.98]"
+          >
+            📱 Instalar App no Telemóvel
+          </button>
         </div>
-      )}
 
       </div>
     </div>
