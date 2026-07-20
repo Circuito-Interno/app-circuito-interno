@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2 } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock } from "lucide-react";
 
 const STREAM_URL = "https://streaming.shoutcast.com/marcoense-fm";
 
@@ -10,10 +10,11 @@ const SOCIALS = {
   website: "https://www.marcoensefm.com",
 };
 
-const SHOWS = [
-  { name: "Circuito Interno - Romântico", schedule: "Terça a Quinta - 22h00 às 24h00" },
-  { name: "Circuito Interno - Rock & Indie Alternativo", schedule: "Sexta - 22h00 às 24h00" },
-  { name: "Circuito Interno - Grandes Clássicos", schedule: "Sábado - 13h00 às 15h00" }
+// Configuração exata dos horários dos teus programas (Dias: 2=Terça, 3=Quarta, 4=Quinta, 5=Sexta, 6=Sábado)
+const SHOWS_CONFIG = [
+  { name: "Circuito Interno - Romântico", days: [2, 3, 4], startHour: 22, startMin: 0, endHour: 24, endMin: 0, label: "Terça a Quinta - 22h00 às 24h00" },
+  { name: "Circuito Interno - Rock & Indie Alternativo", days: [5], startHour: 22, startMin: 0, endHour: 24, endMin: 0, label: "Sexta - 22h00 às 24h00" },
+  { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado - 13h00 às 15h00" }
 ];
 
 export default function App() {
@@ -24,25 +25,86 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Lógica do botão de instalação automática
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isAndroid, setIsAndroid] = useState(false);
+  // Estados para o controlo de tempo e emissão ativa
+  const [isLive, setIsLive] = useState(false);
+  const [countdownText, setCountdownText] = useState("");
 
-  useEffect(() => {
-    // Deteta se o utilizador está no Android
-    const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('android')) {
-      setIsAndroid(true);
+  // Função central que valida se há algum programa a dar AGORA e calcula o tempo para o próximo
+  const updateStreamStatus = () => {
+    const now = new Date();
+    const currentDay = now.getDay(); // 0=Domingo, 1=Segunda, etc.
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+    const currentTimeInMins = currentHour * 60 + currentMin;
+
+    // 1. Verificar se está EM DIRETO neste preciso segundo
+    let liveDetected = false;
+    SHOWS_CONFIG.forEach(show => {
+      if (show.days.includes(currentDay)) {
+        const startTotal = show.startHour * 60 + show.startMin;
+        const endTotal = show.endHour * 60 + show.endMin;
+        if (currentTimeInMins >= startTotal && currentTimeInMins < endTotal) {
+          liveDetected = true;
+        }
+      }
+    });
+
+    setIsLive(liveDetected);
+
+    // Se estiver em direto, não precisamos de mostrar contagem decrescente
+    if (liveDetected) {
+      setCountdownText("");
+      return;
     }
 
-    // Captura o evento de instalação do Chrome/Android
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
+    // Se a emissão cair enquanto tocava fora do horário, desliga o player por segurança
+    if (!liveDetected && playing) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      setPlaying(false);
+    }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    // 2. Calcular quanto falta para o PRÓXIMO programa
+    let minDiff = Infinity;
+    
+    SHOWS_CONFIG.forEach(show => {
+      show.days.forEach(day => {
+        let dayDiff = day - currentDay;
+        if (dayDiff < 0 || (dayDiff === 0 && currentTimeInMins >= (show.startHour * 60 + show.startMin))) {
+          dayDiff += 7; // Passa para a próxima semana
+        }
 
+        // Criar data alvo para o início desse programa específico
+        const targetDate = new Date(now);
+        targetDate.setDate(now.getDate() + dayDiff);
+        targetDate.setHours(show.startHour, show.startMin, 0, 0);
+
+        const diffMs = targetDate.getTime() - now.getTime();
+        if (diffMs < minDiff) {
+          minDiff = diffMs;
+        }
+      });
+    });
+
+    // Converter a diferença de Milissegundos para Dias, Horas, Minutos e Segundos
+    if (minDiff !== Infinity) {
+      const totalSecs = Math.floor(minDiff / 1000);
+      const days = Math.floor(totalSecs / (3600 * 24));
+      const hours = Math.floor((totalSecs % (3600 * 24)) / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+
+      let text = "";
+      if (days > 0) text += `${days}d `;
+      text += `${hours.toString().padStart(2, '0')}h : ${mins.toString().padStart(2, '0')}m : ${secs.toString().padStart(2, '0')}s`;
+      setCountdownText(text);
+    }
+  };
+
+  useEffect(() => {
+    // Inicializa o áudio
     audioRef.current = new Audio();
     const a = audioRef.current;
 
@@ -62,8 +124,12 @@ export default function App() {
     a.addEventListener("canplay", handleCanPlay);
     a.addEventListener("error", handleError);
 
+    // Executa a validação do relógio imediatamente e atualiza a cada 1 segundo
+    updateStreamStatus();
+    const timer = setInterval(updateStreamStatus, 1000);
+
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearInterval(timer);
       a.pause();
       a.removeEventListener("playing", handlePlaying);
       a.removeEventListener("pause", handlePause);
@@ -80,6 +146,12 @@ export default function App() {
   }, [volume, muted]);
 
   const toggle = async () => {
+    // Segurança: se um ouvinte tentar forçar o Play fora do horário, bloqueia
+    if (!isLive) {
+      alert("A emissão do Circuito Interno encontra-se fechada. Por favor, aguarde pelo início do próximo programa! 🎧");
+      return;
+    }
+
     const a = audioRef.current;
     if (!a) return;
 
@@ -104,22 +176,6 @@ export default function App() {
     }
   };
 
-  const handleInstallClick = async () => {
-    if (isAndroid && deferredPrompt) {
-      // No Android abre logo a caixinha nativa para instalar direto!
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } else if (!isAndroid) {
-      // No iPhone dá o aviso direto da Apple
-      alert("No iPhone, clique no botão de partilhar do Safari (ao fundo do ecrã) e escolha 'Adicionar ao Ecrã Principal' 📲");
-    } else {
-      alert("A aplicação já está instalada ou o navegador não suporta a instalação direta.");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-neutral-100 flex flex-col antialiased">
       <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-6">
@@ -131,12 +187,14 @@ export default function App() {
         )}
 
         <header className="pt-12 pb-6 text-center shrink-0">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-neutral-400">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] transition-all ${
+            isLive ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-white/10 bg-white/5 text-neutral-400"
+          }`}>
             <span className="relative flex size-2">
               <span className={`absolute inline-flex h-full w-full rounded-full bg-red-500/60 ${playing ? "animate-ping" : ""}`}></span>
-              <span className="relative inline-flex size-2 rounded-full bg-red-500"></span>
+              <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-neutral-500"}`}></span>
             </span>
-            {playing ? "Em direto · 93.3 FM" : "Disponível · 93.3 FM"}
+            {isLive ? "Em direto · Circuito Interno" : "Emissão Fechada"}
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent">Rádio Marcoense</h1>
           <p className="mt-1 text-sm text-neutral-400 font-medium tracking-wide">Circuito Interno</p>
@@ -144,41 +202,62 @@ export default function App() {
 
         <section className="flex-1 flex flex-col items-center justify-center py-6">
           <div className="relative">
-            <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${playing ? "opacity-50 scale-110" : "opacity-20 scale-90"} bg-gradient-to-br from-red-600 via-orange-500 to-pink-600`} />
+            <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${playing ? "opacity-50 scale-110 bg-gradient-to-br from-red-600 via-orange-500 to-pink-600" : isLive ? "opacity-20 scale-90 bg-red-600" : "opacity-0"}`} />
             <button
               onClick={toggle}
-              className="relative size-44 rounded-full bg-white text-black flex items-center justify-center shadow-2xl transition active:scale-95 hover:scale-[1.01]"
+              disabled={!isLive}
+              className={`relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-3xl ${
+                isLive 
+                  ? "bg-white text-black active:scale-95 hover:scale-[1.01] cursor-pointer" 
+                  : "bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700/50"
+              }`}
             >
               {loading ? (
-                <Loader2 className="size-16 animate-spin text-neutral-800" strokeWidth={1.5} />
+                <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
               ) : playing ? (
-                <Pause className="size-16 text-neutral-900" strokeWidth={1.5} fill="currentColor" />
+                <Pause className="size-16" strokeWidth={1.5} fill="currentColor" />
               ) : (
-                <Play className="size-16 ml-2 text-neutral-900" strokeWidth={1.5} fill="currentColor" />
+                <Play className={`size-16 ml-2 ${!isLive ? "text-neutral-600" : ""}`} strokeWidth={1.5} fill="currentColor" />
               )}
             </button>
           </div>
 
           <div className="mt-6 text-center">
-            <div className="text-sm font-semibold tracking-wide">{playing ? "A tocar agora" : loading ? "A ligar..." : "Toca para ouvir o direto"}</div>
-            <div className="text-xs text-neutral-500 mt-1">marcoensefm.com</div>
+            <div className="text-sm font-semibold tracking-wide">
+              {playing ? "A escutar o programa" : loading ? "A ligar..." : isLive ? "Toca para ouvir o direto!" : "Fora do horário de transmissão"}
+            </div>
+            <div className="text-xs text-neutral-500 mt-1">circuito interno</div>
           </div>
 
-          <div className="mt-8 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setMuted((m) => !m)} className="text-neutral-400 hover:text-white transition">
-                {muted || volume === 0 ? <VolumeX className="size-4 text-red-400" /> : <Volume2 className="size-4" />}
-              </button>
-              <input
-                type="range" min={0} max={1} step={0.01} value={muted ? 0 : volume}
-                onChange={(e) => { setMuted(false); setVolume(parseFloat(e.target.value)); }}
-                className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-red-500 cursor-pointer"
-              />
-              <span className="text-xs tabular-nums text-neutral-400 w-6 text-right font-medium">
-                {Math.round((muted ? 0 : volume) * 100)}
-              </span>
+          {/* CRONÓMETRO / CONTAGEM DECRESCENTE (Apenas aparece fora do horário) */}
+          {!isLive && (
+            <div className="mt-6 w-full max-w-xs bg-amber-500/[0.03] border border-amber-500/10 p-4 rounded-xl text-center">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-amber-400 font-medium tracking-wide uppercase text-[10px]">
+                <Clock className="size-3.5" /> Próximo programa inicia em:
+              </div>
+              <div className="text-lg font-mono font-bold text-neutral-200 mt-2 tracking-wider tabular-nums">
+                {countdownText || "A carregar..."}
+              </div>
             </div>
-          </div>
+          )}
+
+          {isLive && (
+            <div className="mt-8 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setMuted((m) => !m)} className="text-neutral-400 hover:text-white transition">
+                  {muted || volume === 0 ? <VolumeX className="size-4 text-red-400" /> : <Volume2 className="size-4" />}
+                </button>
+                <input
+                  type="range" min={0} max={1} step={0.01} value={muted ? 0 : volume}
+                  onChange={(e) => { setMuted(false); setVolume(parseFloat(e.target.value)); }}
+                  className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-red-500 cursor-pointer"
+                />
+                <span className="text-xs tabular-nums text-neutral-400 w-6 text-right font-medium">
+                  {Math.round((muted ? 0 : volume) * 100)}
+                </span>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="py-4 shrink-0">
@@ -201,7 +280,7 @@ export default function App() {
         <section className="py-4 shrink-0">
           <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">Programas</h2>
           <div className="space-y-2">
-            {SHOWS.map((s) => (
+            {SHOWS_CONFIG.map((s) => (
               <div key={s.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="size-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
@@ -209,7 +288,7 @@ export default function App() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-neutral-200 truncate">{s.name}</div>
-                    <div className="text-[11px] text-neutral-500 truncate mt-0.5">{s.schedule}</div>
+                    <div className="text-[11px] text-neutral-500 truncate mt-0.5">{s.label}</div>
                   </div>
                 </div>
               </div>
@@ -217,7 +296,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="py-4 shrink-0">
+        <section className="pt-4 pb-8 shrink-0">
           <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">Contactos do programa</h2>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5">
             <ContactRow icon={<Mail className="size-4" />} label="Email" value="circuitointerno@marcoensefm.com" href="mailto:circuitointerno@marcoensefm.com" />
@@ -227,16 +306,6 @@ export default function App() {
             © Rádio Marcoense · 93.3 FM
           </p>
         </section>
-
-        {/* NOVO BOTÃO INTELIGENTE DE INSTALAÇÃO AUTOMÁTICA */}
-        <div className="mt-4 mb-8 text-center shrink-0">
-          <button 
-            onClick={handleInstallClick}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white text-xs font-bold py-3.5 px-6 rounded-xl shadow-lg transition active:scale-[0.98]"
-          >
-            📱 Instalar App no Telemóvel
-          </button>
-        </div>
 
       </div>
     </div>
