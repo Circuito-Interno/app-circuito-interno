@@ -160,7 +160,6 @@ export default function App() {
     };
   }, []);
 
-  // Atualizar o áudio instantaneamente sempre que o volume ou o mute mudam
   const handleVolumeChange = (newVol: number) => {
     setVolume(newVol);
     setMuted(false);
@@ -217,7 +216,16 @@ export default function App() {
           </div>
         )}
 
-        <header className="pt-10 pb-4 text-center shrink-0">
+        <header className="pt-8 pb-4 text-center shrink-0 flex flex-col items-center">
+          
+          <div className="mb-3">
+            <img 
+              src="/logo.png" 
+              alt="Circuito Interno Logo" 
+              className="h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(249,115,22,0.4)]" 
+            />
+          </div>
+
           <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] transition-all ${
             isLive ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-amber-500/30 bg-amber-500/10 text-amber-400"
           }`}>
@@ -228,7 +236,7 @@ export default function App() {
             {isLive ? "Programa Em Direto" : "Emissão 24/7"}
           </div>
 
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
             Circuito Interno
           </h1>
           
@@ -242,6 +250,11 @@ export default function App() {
                 A tua rádio online 24h/7d
               </span>
             )}
+          </p>
+
+          {/* Nome e Créditos do Autor */}
+          <p className="mt-1.5 text-[11px] font-medium text-amber-500/90 tracking-wider uppercase">
+            Produção e apresentação: Paulo da Rocha Teixeira
           </p>
         </header>
 
@@ -301,7 +314,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Controlo de Volume Atualizado e Totalmente Funcional */}
+          {/* Controlo de Volume */}
           <div className="mt-4 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
             <div className="flex items-center gap-3">
               <button 
@@ -329,7 +342,7 @@ export default function App() {
           {!isLive && (
             <div className="mt-4 w-full max-w-xs bg-amber-500/[0.03] border border-amber-500/10 p-3.5 rounded-xl text-center">
               <div className="flex items-center justify-center gap-1.5 text-xs text-amber-400 font-medium tracking-wide uppercase text-[10px]">
-                <Clock className="size-3.5" /> Próximo programa em direto (FM):
+                <Clock className="size-3.5" /> Próximo programa em direto na Rádio Marcoense:
               </div>
               <div className="text-base font-mono font-bold text-neutral-200 mt-1.5 tracking-wider tabular-nums">
                 {countdownText || "A carregar..."}
@@ -338,7 +351,7 @@ export default function App() {
           )}
         </section>
 
-        {/* 5 Canais na mesma linha */}
+        {/* 5 Canais */}
         <section className="py-3 shrink-0">
           <div className="text-center text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">
             Canais & Redes Sociais
@@ -394,7 +407,7 @@ export default function App() {
           </div>
           
           <p className="mt-6 text-center text-[10px] text-neutral-600 font-light tracking-wide">
-            © Circuito Interno 2026
+            © Circuito Interno 2026 · Paulo da Rocha Teixeira
           </p>
         </section>
 
