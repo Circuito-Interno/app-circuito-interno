@@ -45,11 +45,27 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         if (data && data.now_playing && data.now_playing.song) {
+          const title = isLive ? currentShowName : (data.now_playing.song.title || "Música no Ar");
+          const artist = isLive ? "Rádio Marcoense · 93.3 FM" : (data.now_playing.song.artist || "Circuito Interno");
+          const artworkUrl = data.now_playing.song.art || "/logo.png";
+
           setCurrentSong({
             title: data.now_playing.song.title || "Música no Ar",
             artist: data.now_playing.song.artist || "Circuito Interno",
             art: data.now_playing.song.art || ""
           });
+
+          // Envia a informação da música diretamente para o ecrã de bloqueio do iOS / Android
+          if ("mediaSession" in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: title,
+              artist: artist,
+              album: "Circuito Interno",
+              artwork: [
+                { src: artworkUrl, sizes: "512x512", type: "image/png" }
+              ]
+            });
+          }
         }
       }
     } catch (e) {
