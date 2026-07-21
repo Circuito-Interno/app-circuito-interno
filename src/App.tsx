@@ -1,14 +1,78 @@
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music, SkipForward, SkipBack } from "lucide-react";
 
 const STREAM_URL = "https://streaming.shoutcast.com/marcoense-fm";
 
-// Adiciona aqui a lista das tuas músicas que estão dentro da pasta public/playlist
+// Lista de músicas enviadas para a pasta public/playlist.mp3/
 const PLAYLIST = [
-  "/playlist/21 hertzWatching YouInfinity Coast2017-06-25.mp3",
-  "/playlist/A Flock Of SeagullsCastles In The SkyCastles In The Sky2018-05-18.mp3",
-  "/playlist/AdnaDreamerNight2014-02-05.mp3",
-  "/playlist/AmatorskiSoldierTbc2013-02-04.mp3"
+  "/playlist.mp3/21 hertzWatching YouInfinity Coast2013Trip-Hop.mp3",
+  "/playlist.mp3/A Flock Of SeagullsCastles In The SkySome Dreams2024-12-13.mp3",
+  "/playlist.mp3/AaRONBlouson NoirWe Cut the Night2015.mp3",
+  "/playlist.mp3/AaRONFASTLANEANATOMY OF LIGHT.mp3",
+  "/playlist.mp3/Active ChildJohnny BelindaYou Are All I See2011Ambient Pop.mp3",
+  "/playlist.mp3/AdnaDreamerNight2014-02-05.mp3",
+  "/playlist.mp3/AimCold Water MusicCold Water Music2007Breaks; Downtempo; Electronic.mp3",
+  "/playlist.mp3/Alabama ShakesThis FeelingSound & Color2015-04-22Soul.mp3",
+  "/playlist.mp3/Alan WalkerFadedDifferent World2018Dance-Pop; Edm; Electro.mp3",
+  "/playlist.mp3/AlexanderTruthAlexander2011-03-01Folk.mp3",
+  "/playlist.mp3/All About EveMartha's HarbourAll About Eve1988Gothic Rock.mp3",
+  "/playlist.mp3/All India RadioPersistFall2008-07-21Ambient.mp3",
+  "/playlist.mp3/All India RadioThe Red RoomThe Unified Field2025.mp3",
+  "/playlist.mp3/AmatorskiSoldierTbc2013-02-04.mp3",
+  "/playlist.mp3/AmatorskiThe KingSame Stars We Shared2013-02-04.mp3",
+  "/playlist.mp3/Amos LeeColorsAmos Lee2005-03-01Singer-Songwriter.mp3",
+  "/playlist.mp3/Angelo BadalamentiTwin Peaks ThemeTwin Peaks (Limited Event Series Soundtrack)2017Ambient; Dark Jazz; Jazz.mp3",
+  "/playlist.mp3/Angus & Julia StoneDraw Your SwordsDown The Way2010Folk; Folk Rock; Indie Pop.mp3",
+  "/playlist.mp3/Angus PowellMonstersMonsters2015-10-02Bones.mp3",
+  "/playlist.mp3/Animal Triste, Marina HandsA GIRL LIKE YOUA GIRL LIKE YOU2025.mp3",
+  "/playlist.mp3/Anna von HausswolffMountains CraveCeremony2012-07-18Neofolk.mp3",
+  "/playlist.mp3/AnnieAmerican CarsDark Hearts.mp3",
+  "/playlist.mp3/AntipolePerceptionsCrystalline2023-05-12.mp3",
+  "/playlist.mp3/Arcade FireYear of the SnakePink Elephant2025-05-09.mp3",
+  "/playlist.mp3/ArchiveCity WallsCity Walls2026.mp3",
+  "/playlist.mp3/Art School GirlfriendBending BackBending Back2017-09-08Dream Pop.mp3",
+  "/playlist.mp3/Asaf AvidanDifferent PulsesDifferent Pulses2012Folk Rock; Pop; Rock.mp3",
+  "/playlist.mp3/AthleteWiresTourist.mp3",
+  "/playlist.mp3/BORDER 242RetrosonicAnalog Prog #32024-01-26.mp3",
+  "/playlist.mp3/BalthazarBunkerBunker2015-07-06Indie.mp3",
+  "/playlist.mp3/Band of HorsesThe FuneralEverything All The Time.mp3",
+  "/playlist.mp3/Barclay James HarvestChild Of The UniverseEveryone Is Everybody Else2006Art Rock; Progressive Rock; Progressive-Rock.mp3",
+  "/playlist.mp3/Ben HarperAmen OmenDiamonds on the Inside2003Blues.mp3",
+  "/playlist.mp3/Ben HarperMorning YearningBoth Sides Of The Gun2006Adult Alternative Rock; Alternative And Punk; Alternative Rock.mp3",
+  "/playlist.mp3/Bob DylanMan in the Long Black CoatChronicles, Volume One Limited Edition 6 Song Sampler2004-10-05Folk.mp3",
+  "/playlist.mp3/Breaking BenjaminThe Diary of JanePhobia2006-08-08Alternative Rock.mp3",
+  "/playlist.mp3/Bruce SpringsteenYoungstownThe Ghost Of Tom Joad1995-11-21.mp3",
+  "/playlist.mp3/Bryan AdamsRun To You(Everything I Do) I Do It For You2001Ballad; Pop; Pop Rock.mp3",
+  "/playlist.mp3/Bryan FerrySlave To LoveBoys And Girls1985.mp3",
+  "/playlist.mp3/Cigarettes After SexApocalypseCigarettes After Sex2017-06-09Dream Pop.mp3",
+  "/playlist.mp3/Cock RobinThe Promise You Made100 80s Hits2008.mp3",
+  "/playlist.mp3/Cowboy JunkiesSweet JaneThe Trinity SessionAlternative Country; Alternative Rock; Blues Rock.mp3",
+  "/playlist.mp3/Cutting Crew(I Just) Died In Your ArmsBroadcastAor Classic Rock; Electronic; New Wave.mp3",
+  "/playlist.mp3/DaughterYouthIf You Leave2013Alternative Rock; Folk Rock; Indie Folk.mp3",
+  "/playlist.mp3/Dire StraitsBrothers in ArmsBrothers in Arms2025-05-16Classic Rock.mp3",
+  "/playlist.mp3/Drab MajestyToo Soon To TellThe Demonstration2017Dark Wave; Electronic; Ethereal Wave.mp3",
+  "/playlist.mp3/EditorsThe Phone BookThe Weight Of Your Love2013Alternative Rock; Indie Rock; Rock.mp3",
+  "/playlist.mp3/EmancipatorGreenlandSafe In The Steep Cliffs2010Downbeat; Downtempo; Electronic.mp3",
+  "/playlist.mp3/EmikaPrimary ColoursDva2013Electronic.mp3",
+  "/playlist.mp3/Emotive GreyCosmosSky Gazing2023-09-01.mp3",
+  "/playlist.mp3/EuropeThe Final Countdown'80s Metal Gold2007Classic Rock; Heavy Metal; Rock.mp3",
+  "/playlist.mp3/Fischer-ZSo LongGoing Deaf For A Living1980-05.mp3",
+  "/playlist.mp3/Frankie Goes To HollywoodThe Power Of LoveBang! ... Hard On (The Greatest Hits & The Complete Ztt Videos)200280s; Alternative Dance; Ballad.mp3",
+  "/playlist.mp3/GNRBem Vindo Ao PassadoPopless2006-07-14Portuguese.mp3",
+  "/playlist.mp3/HIMJoin Me In DeathRazorblade Romance (Deluxe Re-Mastered)2014-12-15.mp3",
+  "/playlist.mp3/HozierTake Me to ChurchHozier2023-06-16Indie.mp3",
+  "/playlist.mp3/Hunter as a HorseFallen LeavesThe Two Magics Vol.12016-04-22Electronic.mp3",
+  "/playlist.mp3/JamesOne Of The ThreeLaid2001Alternative Rock; Brit Pop; Indie Pop.mp3",
+  "/playlist.mp3/KaleidaEcho Saw YouTear the Roots.mp3",
+  "/playlist.mp3/KasabianWhere Did All The Love Go101 Classic Hits2017.mp3",
+  "/playlist.mp3/Kings of LeonWALLSWALLS2016Alternative Rock.mp3",
+  "/playlist.mp3/Lara LiTelepatia100 Grandes Vedetas Portuguesas1997Portuguese.mp3",
+  "/playlist.mp3/Laura BraniganSelf ControlSelf Control Tour2001Pop.mp3",
+  "/playlist.mp3/Led ZeppelinStairway to Heaven[Led Zeppelin IV]1971-11-08Classic Rock.mp3",
+  "/playlist.mp3/Lenny KravitzBelieve in MeRozengeur & Wodka Lime, Deel 22002-11Rock.mp3",
+  "/playlist.mp3/Linkin ParkOne More Light[standalone recordings]2020Ambient Pop.mp3",
+  "/playlist.mp3/a-haI've Been Losing YouScoundrel Days (Deluxe Edition)1986-10-06.mp3",
+  "/playlist.mp3/anaiisDeus DeusDeus Deus2025-06-13.mp3"
 ];
 
 const SOCIALS = {
@@ -103,7 +167,6 @@ export default function App() {
     const handleWaiting = () => setLoading(true);
     const handleCanPlay = () => setLoading(false);
     const handleEnded = () => {
-      // Quando a música termina, salta para a próxima automaticamente!
       if (!isLive && PLAYLIST.length > 0) {
         setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
       }
@@ -111,7 +174,7 @@ export default function App() {
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
-      setError("Erro ao carregar o áudio. A tentar próxima música...");
+      setError("Erro ao carregar o áudio.");
     };
 
     a.addEventListener("playing", handlePlaying);
@@ -174,6 +237,18 @@ export default function App() {
     }
   };
 
+  const nextTrack = () => {
+    if (!isLive && PLAYLIST.length > 0) {
+      setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
+    }
+  };
+
+  const prevTrack = () => {
+    if (!isLive && PLAYLIST.length > 0) {
+      setCurrentTrackIndex((prev) => (prev - 1 + PLAYLIST.length) % PLAYLIST.length);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-neutral-100 flex flex-col antialiased">
       <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-6">
@@ -204,35 +279,49 @@ export default function App() {
         </header>
 
         <section className="flex-1 flex flex-col items-center justify-center py-6">
-          <div className="relative">
-            <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
-              playing 
-                ? isLive ? "opacity-50 scale-110 bg-gradient-to-br from-red-600 via-orange-500 to-pink-600" : "opacity-40 scale-105 bg-gradient-to-br from-amber-500 to-orange-600"
-                : "opacity-20 scale-90 bg-white/10"
-            }`} />
-            
-            <button
-              onClick={toggle}
-              className={`relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-300 active:scale-95 hover:scale-[1.01] cursor-pointer ${
-                isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
-              ) : playing ? (
-                <Pause className="size-16" strokeWidth={1.5} fill="currentColor" />
-              ) : isLive ? (
-                <Radio className="size-16" strokeWidth={1.5} />
-              ) : (
-                <Music className="size-16" strokeWidth={1.5} />
-              )}
-            </button>
+          <div className="flex items-center gap-6">
+            {!isLive && (
+              <button onClick={prevTrack} className="p-3 text-neutral-400 hover:text-white transition active:scale-95">
+                <SkipBack className="size-6" />
+              </button>
+            )}
+
+            <div className="relative">
+              <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
+                playing 
+                  ? isLive ? "opacity-50 scale-110 bg-gradient-to-br from-red-600 via-orange-500 to-pink-600" : "opacity-40 scale-105 bg-gradient-to-br from-amber-500 to-orange-600"
+                  : "opacity-20 scale-90 bg-white/10"
+              }`} />
+              
+              <button
+                onClick={toggle}
+                className={`relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-300 active:scale-95 hover:scale-[1.01] cursor-pointer ${
+                  isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
+                }`}
+              >
+                {loading ? (
+                  <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
+                ) : playing ? (
+                  <Pause className="size-16" strokeWidth={1.5} fill="currentColor" />
+                ) : isLive ? (
+                  <Radio className="size-16" strokeWidth={1.5} />
+                ) : (
+                  <Music className="size-16" strokeWidth={1.5} />
+                )}
+              </button>
+            </div>
+
+            {!isLive && (
+              <button onClick={nextTrack} className="p-3 text-neutral-400 hover:text-white transition active:scale-95">
+                <SkipForward className="size-6" />
+              </button>
+            )}
           </div>
 
           <div className="mt-6 text-center">
             <div className="text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5">
               {playing 
-                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a Playlist do Circuito Interno" 
+                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a Playlist do Circuito Interno 🎧" 
                 : loading ? "A ligar..." 
                 : isLive ? "Toca para ligar à emissão em direto 🔴" 
                 : "Toca para ouvir a Playlist 🎧"}
