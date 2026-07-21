@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music } from "lucide-react";
 
 const STREAM_URL = "https://streaming.shoutcast.com/marcoense-fm";
-const BACKGROUND_MUSIC_URL = "/musica.mp3"; // Caminho para o teu ficheiro MP3 na pasta public
+const BACKGROUND_MUSIC_URL = "/musica.mp3"; 
 
 const SOCIALS = {
   facebook: "https://www.facebook.com/radiomarcoense/",
@@ -97,7 +97,7 @@ export default function App() {
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
-      setError("Erro ao carregar o áudio. Verifique se o ficheiro MP3 está na pasta public.");
+      setError("Não foi possível carregar o áudio. Garanta que o ficheiro 'musica.mp3' está na pasta 'public'.");
     };
 
     a.addEventListener("playing", handlePlaying);
@@ -140,12 +140,12 @@ export default function App() {
     try {
       setError(null);
       setLoading(true);
-      // Se estiver em direto toca o stream da rádio, senão toca o MP3 de fundo
+      // Seleciona a fonte de áudio adequada (Emissão em Direto ou Música MP3)
       a.src = isLive ? STREAM_URL : BACKGROUND_MUSIC_URL;
       await a.play();
     } catch (e) {
       console.error(e);
-      setError("Erro ao iniciar a reprodução de áudio.");
+      setError("Erro ao iniciar a reprodução.");
       setPlaying(false);
     } finally {
       setLoading(false);
@@ -170,7 +170,7 @@ export default function App() {
               <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/60" : "bg-amber-500/60"} ${playing ? "animate-ping" : ""}`}></span>
               <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
             </span>
-            {isLive ? "Programa Em Direto" : "Emissão de Apoio / Música"}
+            {isLive ? "Programa Em Direto" : "Música de Apoio"}
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
@@ -191,14 +191,18 @@ export default function App() {
             
             <button
               onClick={toggle}
-              className="relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-300 bg-white text-black active:scale-95 hover:scale-[1.01] cursor-pointer"
+              className={`relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-300 active:scale-95 hover:scale-[1.01] cursor-pointer ${
+                isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
+              }`}
             >
               {loading ? (
-                <Loader2 className="size-16 animate-spin text-neutral-800" strokeWidth={1.5} />
+                <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
               ) : playing ? (
-                <Pause className="size-16 text-neutral-900" strokeWidth={1.5} fill="currentColor" />
+                <Pause className="size-16" strokeWidth={1.5} fill="currentColor" />
+              ) : isLive ? (
+                <Radio className="size-16" strokeWidth={1.5} />
               ) : (
-                <Play className="size-16 ml-2 text-neutral-900" strokeWidth={1.5} fill="currentColor" />
+                <Music className="size-16" strokeWidth={1.5} />
               )}
             </button>
           </div>
@@ -206,10 +210,10 @@ export default function App() {
           <div className="mt-6 text-center">
             <div className="text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5">
               {playing 
-                ? isLive ? "A escutar o programa em direto!" : "A escutar música do programa" 
+                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a música do Circuito Interno" 
                 : loading ? "A ligar..." 
-                : isLive ? "Toca para ouvir o direto!" 
-                : "Toca para ouvir a música de fundo"}
+                : isLive ? "Toca para ligar à emissão em direto 🔴" 
+                : "Toca para ouvir a música de fundo 🎧"}
             </div>
             <div className="text-xs text-neutral-500 mt-1">Rádio Marcoense · 93.3 FM</div>
           </div>
@@ -222,7 +226,7 @@ export default function App() {
               <input
                 type="range" min={0} max={1} step={0.01} value={muted ? 0 : volume}
                 onChange={(e) => { setMuted(false); setVolume(parseFloat(e.target.value)); }}
-                className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-red-500 cursor-pointer"
+                className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-amber-500 cursor-pointer"
               />
               <span className="text-xs tabular-nums text-neutral-400 w-6 text-right font-medium">
                 {Math.round((muted ? 0 : volume) * 100)}
@@ -252,7 +256,7 @@ export default function App() {
             } />
             <SocialButton href={SOCIALS.spotify} label="Spotify" icon={
               <svg viewBox="0 0 24 24" className="size-4" fill="currentColor">
-                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
+                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 0 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
               </svg>
             } />
             <SocialButton href={SOCIALS.website} label="Web" icon={<Globe className="size-4" />} />
