@@ -252,7 +252,6 @@ export default function App() {
             )}
           </p>
 
-          {/* Nome e Créditos do Autor */}
           <p className="mt-1.5 text-[11px] font-medium text-amber-500/90 tracking-wider uppercase">
             Produção e apresentação: Paulo da Rocha Teixeira
           </p>
@@ -402,8 +401,18 @@ export default function App() {
         <section className="pt-3 pb-8 shrink-0">
           <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2">Contactos do programa</h2>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5">
-            <ContactRow icon={<Mail className="size-4" />} label="Email" value="circuitointerno@marcoensefm.com" href="mailto:circuitointerno@marcoensefm.com" />
-            <ContactRow icon={<Phone className="size-4" />} label="Telefone / WhatsApp" value="+351 255 000 000" href="tel:+351255000000" />
+            <ContactRow 
+              icon={<Mail className="size-4" />} 
+              label="Email" 
+              value="circuitointernoproducoes@gmail.com" 
+              href="mailto:circuitointernoproducoes@gmail.com" 
+            />
+            <ContactRow 
+              icon={<Phone className="size-4 text-emerald-400" />} 
+              label="WhatsApp" 
+              value="+351 963 350 373" 
+              href="https://wa.me/351963350373" 
+            />
           </div>
           
           <p className="mt-6 text-center text-[10px] text-neutral-600 font-light tracking-wide">
@@ -432,7 +441,7 @@ function SocialTile({ href, name, icon }: { href: string; name: string; icon: Re
 
 function ContactRow({ icon, label, value, href }: { icon: React.ReactNode; label: string; value: string; href: string }) {
   return (
-    <a href={href} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.01] transition active:bg-white/[0.02]">
+    <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.01] transition active:bg-white/[0.02]">
       <div className="size-7 rounded-md bg-white/5 flex items-center justify-center text-neutral-400">{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="text-[9px] uppercase font-bold tracking-wider text-neutral-500">{label}</div>
