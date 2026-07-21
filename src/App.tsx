@@ -236,7 +236,7 @@ export default function App() {
             {isLive ? "Programa Em Direto" : "Emissão 24/7"}
           </div>
 
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white">
             Circuito Interno
           </h1>
           
