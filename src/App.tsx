@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music } from "lucide-react";
 
-const STREAM_URL = "https://streaming.shoutcast.com/marcoense-fm";
-const BACKGROUND_MUSIC_URL = "/musica.mp3"; 
+// O teu novo Stream oficial do AzuraCast com AutoDJ 24/7
+const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 
 const SOCIALS = {
   facebook: "https://www.facebook.com/radiomarcoense/",
@@ -97,7 +97,7 @@ export default function App() {
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
-      setError("Não foi possível carregar o áudio. Garanta que o ficheiro 'musica.mp3' está na pasta 'public'.");
+      setError("A carregar o sinal da emissão...");
     };
 
     a.addEventListener("playing", handlePlaying);
@@ -140,11 +140,12 @@ export default function App() {
     try {
       setError(null);
       setLoading(true);
-      a.src = isLive ? STREAM_URL : BACKGROUND_MUSIC_URL;
+      // Força o carregamento do stream em direto no momento em que clica no Play
+      a.src = STREAM_URL + "?nocache=" + new Date().getTime();
       await a.play();
     } catch (e) {
       console.error(e);
-      setError("Erro ao iniciar a reprodução.");
+      setError("Erro ao iniciar o sinal da rádio.");
       setPlaying(false);
     } finally {
       setLoading(false);
@@ -169,7 +170,7 @@ export default function App() {
               <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/60" : "bg-amber-500/60"} ${playing ? "animate-ping" : ""}`}></span>
               <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
             </span>
-            {isLive ? "Programa Em Direto" : "Música de Apoio"}
+            {isLive ? "Programa Em Direto" : "Emissão 24/7"}
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
@@ -209,10 +210,10 @@ export default function App() {
           <div className="mt-6 text-center">
             <div className="text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5">
               {playing 
-                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a música do Circuito Interno" 
+                ? isLive ? "A escutar o programa em direto!" : "A escutar a rádio do Circuito Interno 🎧" 
                 : loading ? "A ligar..." 
                 : isLive ? "Toca para ligar à emissão em direto 🔴" 
-                : "Toca para ouvir a música de fundo 🎧"}
+                : "Toca para ouvir a emissão 🎧"}
             </div>
             <div className="text-xs text-neutral-500 mt-1">Rádio Marcoense · 93.3 FM</div>
           </div>
