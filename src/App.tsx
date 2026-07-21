@@ -3,6 +3,8 @@ import { Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Mus
 
 // O teu novo Stream oficial do AzuraCast com AutoDJ 24/7
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
+// API do AzuraCast para obter a música atual em tempo real
+const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
 const SOCIALS = {
   facebook: "https://www.facebook.com/radiomarcoense/",
@@ -17,6 +19,13 @@ const SHOWS_CONFIG = [
   { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado - 13h00 às 15h00" }
 ];
 
+interface SongInfo {
+  title: string;
+  artist: string;
+  art: string;
+  album: string;
+}
+
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -27,6 +36,29 @@ export default function App() {
   
   const [isLive, setIsLive] = useState(false);
   const [countdownText, setCountdownText] = useState("");
+  
+  // Estado para guardar a música atual
+  const [currentSong, setCurrentSong] = useState<SongInfo | null>(null);
+
+  // Procurar a música em tempo real a partir da API do AzuraCast
+  const fetchNowPlaying = async () => {
+    try {
+      const res = await fetch(API_NOWPLAYING);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.now_playing && data.now_playing.song) {
+          setCurrentSong({
+            title: data.now_playing.song.title || "Música no Ar",
+            artist: data.now_playing.song.artist || "Circuito Interno",
+            art: data.now_playing.song.art || "",
+            album: data.now_playing.song.album || ""
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao carregar a música atual:", e);
+    }
+  };
 
   const updateStreamStatus = () => {
     const now = new Date();
@@ -107,10 +139,15 @@ export default function App() {
     a.addEventListener("error", handleError);
 
     updateStreamStatus();
+    fetchNowPlaying();
+
     const timer = setInterval(updateStreamStatus, 1000);
+    // Atualiza a música a tocar a cada 10 segundos
+    const songTimer = setInterval(fetchNowPlaying, 10000);
 
     return () => {
       clearInterval(timer);
+      clearInterval(songTimer);
       a.pause();
       a.removeEventListener("playing", handlePlaying);
       a.removeEventListener("pause", handlePause);
@@ -140,9 +177,9 @@ export default function App() {
     try {
       setError(null);
       setLoading(true);
-      // Força o carregamento do stream em direto no momento em que clica no Play
       a.src = STREAM_URL + "?nocache=" + new Date().getTime();
       await a.play();
+      fetchNowPlaying();
     } catch (e) {
       console.error(e);
       setError("Erro ao iniciar o sinal da rádio.");
@@ -162,7 +199,7 @@ export default function App() {
           </div>
         )}
 
-        <header className="pt-12 pb-6 text-center shrink-0">
+        <header className="pt-10 pb-4 text-center shrink-0">
           <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] transition-all ${
             isLive ? "border-red-500/30 bg-red-500/10 text-red-400" : "border-amber-500/30 bg-amber-500/10 text-amber-400"
           }`}>
@@ -173,7 +210,7 @@ export default function App() {
             {isLive ? "Programa Em Direto" : "Emissão 24/7"}
           </div>
 
-          <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
             Circuito Interno
           </h1>
           <p className="mt-1 text-xs text-neutral-400 font-medium tracking-wide">
@@ -181,7 +218,9 @@ export default function App() {
           </p>
         </header>
 
-        <section className="flex-1 flex flex-col items-center justify-center py-6">
+        <section className="flex-1 flex flex-col items-center justify-center py-4">
+          
+          {/* Botão de Play */}
           <div className="relative">
             <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
               playing 
@@ -191,34 +230,52 @@ export default function App() {
             
             <button
               onClick={toggle}
-              className={`relative size-44 rounded-full flex items-center justify-center shadow-2xl transition duration-300 active:scale-95 hover:scale-[1.01] cursor-pointer ${
+              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition duration-300 active:scale-95 hover:scale-[1.01] cursor-pointer ${
                 isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
               }`}
             >
               {loading ? (
-                <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
+                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
               ) : playing ? (
-                <Pause className="size-16" strokeWidth={1.5} fill="currentColor" />
+                <Pause className="size-14" strokeWidth={1.5} fill="currentColor" />
               ) : isLive ? (
-                <Radio className="size-16" strokeWidth={1.5} />
+                <Radio className="size-14" strokeWidth={1.5} />
               ) : (
-                <Music className="size-16" strokeWidth={1.5} />
+                <Music className="size-14" strokeWidth={1.5} />
               )}
             </button>
           </div>
 
-          <div className="mt-6 text-center">
-            <div className="text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5">
-              {playing 
-                ? isLive ? "A escutar o programa em direto!" : "A escutar a rádio do Circuito Interno 🎧" 
-                : loading ? "A ligar..." 
-                : isLive ? "Toca para ligar à emissão em direto 🔴" 
-                : "Toca para ouvir a emissão 🎧"}
+          {/* Cartão "A Tocar Agora" com capa e nome da música */}
+          <div className="mt-6 w-full max-w-xs bg-white/[0.03] border border-white/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-lg backdrop-blur-md">
+            {currentSong && currentSong.art ? (
+              <img 
+                src={currentSong.art} 
+                alt="Capa" 
+                className="size-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" 
+              />
+            ) : (
+              <div className="size-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Music className="size-6" />
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+                A Tocar Agora
+              </div>
+              <div className="text-xs font-bold text-white truncate mt-0.5">
+                {currentSong?.title || "Circuito Interno"}
+              </div>
+              <div className="text-[11px] text-neutral-400 truncate font-medium">
+                {currentSong?.artist || "Rádio Marcoense 93.3 FM"}
+              </div>
             </div>
-            <div className="text-xs text-neutral-500 mt-1">Rádio Marcoense · 93.3 FM</div>
           </div>
 
-          <div className="mt-6 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
+          {/* Controlo de Volume */}
+          <div className="mt-4 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
             <div className="flex items-center gap-3">
               <button onClick={() => setMuted((m) => !m)} className="text-neutral-400 hover:text-white transition">
                 {muted || volume === 0 ? <VolumeX className="size-4 text-red-400" /> : <Volume2 className="size-4" />}
@@ -235,18 +292,18 @@ export default function App() {
           </div>
 
           {!isLive && (
-            <div className="mt-6 w-full max-w-xs bg-amber-500/[0.03] border border-amber-500/10 p-4 rounded-xl text-center">
+            <div className="mt-4 w-full max-w-xs bg-amber-500/[0.03] border border-amber-500/10 p-3.5 rounded-xl text-center">
               <div className="flex items-center justify-center gap-1.5 text-xs text-amber-400 font-medium tracking-wide uppercase text-[10px]">
                 <Clock className="size-3.5" /> Próximo programa em direto:
               </div>
-              <div className="text-lg font-mono font-bold text-neutral-200 mt-2 tracking-wider tabular-nums">
+              <div className="text-base font-mono font-bold text-neutral-200 mt-1.5 tracking-wider tabular-nums">
                 {countdownText || "A carregar..."}
               </div>
             </div>
           )}
         </section>
 
-        <section className="py-4 shrink-0">
+        <section className="py-3 shrink-0">
           <div className="grid grid-cols-4 gap-2.5">
             <SocialButton href={SOCIALS.facebook} label="Facebook" icon={
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
@@ -263,11 +320,11 @@ export default function App() {
           </div>
         </section>
 
-        <section className="py-4 shrink-0">
-          <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">Programas</h2>
+        <section className="py-3 shrink-0">
+          <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2">Programas</h2>
           <div className="space-y-2">
             {SHOWS_CONFIG.map((s) => (
-              <div key={s.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
+              <div key={s.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2.5">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="size-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center shrink-0">
                     <Radio className="size-4" />
@@ -282,8 +339,8 @@ export default function App() {
           </div>
         </section>
 
-        <section className="pt-4 pb-8 shrink-0">
-          <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">Contactos do programa</h2>
+        <section className="pt-3 pb-8 shrink-0">
+          <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2">Contactos do programa</h2>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5">
             <ContactRow icon={<Mail className="size-4" />} label="Email" value="circuitointerno@marcoensefm.com" href="mailto:circuitointerno@marcoensefm.com" />
             <ContactRow icon={<Phone className="size-4" />} label="Telefone / WhatsApp" value="+351 255 000 000" href="tel:+351255000000" />
