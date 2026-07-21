@@ -372,26 +372,26 @@ export default function App() {
           )}
         </section>
 
-        {/* 5 Canais */}
+        {/* 5 Canais sem texto e com ícones maiores */}
         <section className="py-3 shrink-0">
           <div className="text-center text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">
             Canais & Redes Sociais
           </div>
-          <div className="grid grid-cols-5 gap-1.5 w-full">
-            <SocialTile href={SOCIALS.website} name="Web" icon={<Globe className="size-4 text-amber-400" />} />
-            <SocialTile href={SOCIALS.instagram} name="Insta" icon={
-              <svg viewBox="0 0 24 24" className="size-4 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <div className="grid grid-cols-5 gap-2 w-full">
+            <SocialTile href={SOCIALS.website} icon={<Globe className="size-6 text-amber-400" />} />
+            <SocialTile href={SOCIALS.instagram} icon={
+              <svg viewBox="0 0 24 24" className="size-6 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             } />
-            <SocialTile href={SOCIALS.facebook} name="FB" icon={
-              <svg viewBox="0 0 24 24" className="size-4 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            <SocialTile href={SOCIALS.facebook} icon={
+              <svg viewBox="0 0 24 24" className="size-6 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
             } />
-            <SocialTile href={SOCIALS.spotify} name="Spotify" icon={
-              <svg viewBox="0 0 24 24" className="size-4 text-emerald-400" fill="currentColor">
+            <SocialTile href={SOCIALS.spotify} icon={
+              <svg viewBox="0 0 24 24" className="size-6 text-emerald-400" fill="currentColor">
                 <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
               </svg>
             } />
-            <SocialTile href={SOCIALS.youtube} name="YouTube" icon={
-              <svg viewBox="0 0 24 24" className="size-4 text-red-500" fill="currentColor">
+            <SocialTile href={SOCIALS.youtube} icon={
+              <svg viewBox="0 0 24 24" className="size-6 text-red-500" fill="currentColor">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 0 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
             } />
@@ -447,16 +447,15 @@ export default function App() {
   );
 }
 
-function SocialTile({ href, name, icon }: { href: string; name: string; icon: React.ReactNode }) {
+function SocialTile({ href, icon }: { href: string; icon: React.ReactNode }) {
   return (
     <a 
       href={href} 
       target="_blank" 
       rel="noreferrer" 
-      className="flex flex-col items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] py-2 px-0.5 text-neutral-300 hover:text-white hover:bg-white/[0.08] transition duration-200 active:scale-95 shadow-sm"
+      className="flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] py-3 text-neutral-300 hover:text-white hover:bg-white/[0.08] transition duration-200 active:scale-95 shadow-sm"
     >
       {icon}
-      <span className="text-[9px] font-bold tracking-tight text-neutral-300 truncate max-w-full">{name}</span>
     </a>
   );
 }
