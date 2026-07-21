@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music } from "lucide-react";
 
 const STREAM_URL = "https://streaming.shoutcast.com/marcoense-fm";
-const BACKGROUND_MUSIC_URL = "/musica.mp3"; 
+
+// Adiciona aqui a lista das tuas músicas que estão dentro da pasta public/playlist
+const PLAYLIST = [
+  "/playlist/21 hertzWatching YouInfinity Coast2017-06-25.mp3",
+  "/playlist/A Flock Of SeagullsCastles In The SkyCastles In The Sky2018-05-18.mp3",
+  "/playlist/AdnaDreamerNight2014-02-05.mp3",
+  "/playlist/AmatorskiSoldierTbc2013-02-04.mp3"
+];
 
 const SOCIALS = {
   facebook: "https://www.facebook.com/radiomarcoense/",
@@ -24,6 +31,7 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   
   const [isLive, setIsLive] = useState(false);
   const [countdownText, setCountdownText] = useState("");
@@ -94,16 +102,23 @@ export default function App() {
     const handlePause = () => setPlaying(false);
     const handleWaiting = () => setLoading(true);
     const handleCanPlay = () => setLoading(false);
+    const handleEnded = () => {
+      // Quando a música termina, salta para a próxima automaticamente!
+      if (!isLive && PLAYLIST.length > 0) {
+        setCurrentTrackIndex((prev) => (prev + 1) % PLAYLIST.length);
+      }
+    };
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
-      setError("Não foi possível carregar o áudio. Garanta que o ficheiro 'musica.mp3' está na pasta 'public'.");
+      setError("Erro ao carregar o áudio. A tentar próxima música...");
     };
 
     a.addEventListener("playing", handlePlaying);
     a.addEventListener("pause", handlePause);
     a.addEventListener("waiting", handleWaiting);
     a.addEventListener("canplay", handleCanPlay);
+    a.addEventListener("ended", handleEnded);
     a.addEventListener("error", handleError);
 
     updateStreamStatus();
@@ -116,9 +131,17 @@ export default function App() {
       a.removeEventListener("pause", handlePause);
       a.removeEventListener("waiting", handleWaiting);
       a.removeEventListener("canplay", handleCanPlay);
+      a.removeEventListener("ended", handleEnded);
       a.removeEventListener("error", handleError);
     };
-  }, []);
+  }, [isLive]);
+
+  useEffect(() => {
+    if (playing && !isLive && audioRef.current && PLAYLIST.length > 0) {
+      audioRef.current.src = PLAYLIST[currentTrackIndex];
+      audioRef.current.play().catch(console.error);
+    }
+  }, [currentTrackIndex]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -140,8 +163,7 @@ export default function App() {
     try {
       setError(null);
       setLoading(true);
-      // Seleciona a fonte de áudio adequada (Emissão em Direto ou Música MP3)
-      a.src = isLive ? STREAM_URL : BACKGROUND_MUSIC_URL;
+      a.src = isLive ? STREAM_URL : PLAYLIST[currentTrackIndex];
       await a.play();
     } catch (e) {
       console.error(e);
@@ -170,7 +192,7 @@ export default function App() {
               <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/60" : "bg-amber-500/60"} ${playing ? "animate-ping" : ""}`}></span>
               <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
             </span>
-            {isLive ? "Programa Em Direto" : "Música de Apoio"}
+            {isLive ? "Programa Em Direto" : "Playlist Circuito Interno"}
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
@@ -210,10 +232,10 @@ export default function App() {
           <div className="mt-6 text-center">
             <div className="text-sm font-semibold tracking-wide flex items-center justify-center gap-1.5">
               {playing 
-                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a música do Circuito Interno" 
+                ? isLive ? "A escutar o programa em direto na rádio!" : "A escutar a Playlist do Circuito Interno" 
                 : loading ? "A ligar..." 
                 : isLive ? "Toca para ligar à emissão em direto 🔴" 
-                : "Toca para ouvir a música de fundo 🎧"}
+                : "Toca para ouvir a Playlist 🎧"}
             </div>
             <div className="text-xs text-neutral-500 mt-1">Rádio Marcoense · 93.3 FM</div>
           </div>
@@ -256,7 +278,7 @@ export default function App() {
             } />
             <SocialButton href={SOCIALS.spotify} label="Spotify" icon={
               <svg viewBox="0 0 24 24" className="size-4" fill="currentColor">
-                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 0 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
+                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
               </svg>
             } />
             <SocialButton href={SOCIALS.website} label="Web" icon={<Globe className="size-4" />} />
