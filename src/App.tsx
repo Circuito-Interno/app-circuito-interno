@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { Pause, Volume2, VolumeX, Mail, Phone, Radio, Globe, Loader2, Clock, Music } from "lucide-react";
+import { Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, Globe } from "lucide-react";
 
-// O teu novo Stream oficial do AzuraCast com AutoDJ 24/7
+// Stream oficial do AzuraCast
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
-// API do AzuraCast para obter a música atual em tempo real
+// API para ler a música a tocar em tempo real
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
 const SOCIALS = {
-  facebook: "https://www.facebook.com/radiomarcoense/",
-  instagram: "https://www.instagram.com/radiomarcoense/",
-  spotify: "https://open.spotify.com/user/radiomarcoense",
-  website: "https://www.marcoensefm.com",
+  facebook: "https://www.facebook.com/share/18uJNixTTr/",
+  instagram: "https://www.instagram.com/circuitointernoradio",
+  spotify: "https://open.spotify.com/playlist/0swmTL4K4uP7VqrooqJX6z",
+  youtube: "https://youtube.com/@circuitointernoradio",
+  website: "https://circuitointerno.pt",
 };
 
 const SHOWS_CONFIG = [
@@ -23,7 +24,6 @@ interface SongInfo {
   title: string;
   artist: string;
   art: string;
-  album: string;
 }
 
 export default function App() {
@@ -35,12 +35,10 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   
   const [isLive, setIsLive] = useState(false);
+  const [currentShowName, setCurrentShowName] = useState("");
   const [countdownText, setCountdownText] = useState("");
-  
-  // Estado para guardar a música atual
   const [currentSong, setCurrentSong] = useState<SongInfo | null>(null);
 
-  // Procurar a música em tempo real a partir da API do AzuraCast
   const fetchNowPlaying = async () => {
     try {
       const res = await fetch(API_NOWPLAYING);
@@ -50,13 +48,12 @@ export default function App() {
           setCurrentSong({
             title: data.now_playing.song.title || "Música no Ar",
             artist: data.now_playing.song.artist || "Circuito Interno",
-            art: data.now_playing.song.art || "",
-            album: data.now_playing.song.album || ""
+            art: data.now_playing.song.art || ""
           });
         }
       }
     } catch (e) {
-      console.error("Erro ao carregar a música atual:", e);
+      console.error("Erro ao procurar metadados:", e);
     }
   };
 
@@ -68,17 +65,21 @@ export default function App() {
     const currentTimeInMins = currentHour * 60 + currentMin;
 
     let liveDetected = false;
+    let activeShowTitle = "";
+
     SHOWS_CONFIG.forEach(show => {
       if (show.days.includes(currentDay)) {
         const startTotal = show.startHour * 60 + show.startMin;
         const endTotal = show.endHour * 60 + show.endMin;
         if (currentTimeInMins >= startTotal && currentTimeInMins < endTotal) {
           liveDetected = true;
+          activeShowTitle = show.name;
         }
       }
     });
 
     setIsLive(liveDetected);
+    setCurrentShowName(activeShowTitle);
 
     if (liveDetected) {
       setCountdownText("");
@@ -142,7 +143,6 @@ export default function App() {
     fetchNowPlaying();
 
     const timer = setInterval(updateStreamStatus, 1000);
-    // Atualiza a música a tocar a cada 10 segundos
     const songTimer = setInterval(fetchNowPlaying, 10000);
 
     return () => {
@@ -213,8 +213,17 @@ export default function App() {
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-300 bg-clip-text text-transparent">
             Circuito Interno
           </h1>
-          <p className="mt-1 text-xs text-neutral-400 font-medium tracking-wide">
-            Emissão em direto na Rádio Marcoense · 93.3 FM
+          
+          <p className="mt-1 text-xs font-medium tracking-wide transition-all duration-300">
+            {isLive ? (
+              <span className="text-red-400 font-semibold flex items-center justify-center gap-1">
+                🔴 Em direto na Rádio Marcoense · 93.3 FM
+              </span>
+            ) : (
+              <span className="text-neutral-400">
+                A tua rádio online 24h/7d
+              </span>
+            )}
           </p>
         </header>
 
@@ -246,7 +255,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Cartão "A Tocar Agora" com capa e nome da música */}
+          {/* Cartão "A Tocar Agora" */}
           <div className="mt-6 w-full max-w-xs bg-white/[0.03] border border-white/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-lg backdrop-blur-md">
             {currentSong && currentSong.art ? (
               <img 
@@ -263,13 +272,13 @@ export default function App() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-400">
                 <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
-                A Tocar Agora
+                {isLive ? "A Transmitir" : "A Tocar Agora"}
               </div>
               <div className="text-xs font-bold text-white truncate mt-0.5">
-                {currentSong?.title || "Circuito Interno"}
+                {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
               </div>
               <div className="text-[11px] text-neutral-400 truncate font-medium">
-                {currentSong?.artist || "Rádio Marcoense 93.3 FM"}
+                {isLive ? "Rádio Marcoense · 93.3 FM" : (currentSong?.artist || "Rádio Circuito Interno")}
               </div>
             </div>
           </div>
@@ -294,7 +303,7 @@ export default function App() {
           {!isLive && (
             <div className="mt-4 w-full max-w-xs bg-amber-500/[0.03] border border-amber-500/10 p-3.5 rounded-xl text-center">
               <div className="flex items-center justify-center gap-1.5 text-xs text-amber-400 font-medium tracking-wide uppercase text-[10px]">
-                <Clock className="size-3.5" /> Próximo programa em direto:
+                <Clock className="size-3.5" /> Próximo programa em direto (FM):
               </div>
               <div className="text-base font-mono font-bold text-neutral-200 mt-1.5 tracking-wider tabular-nums">
                 {countdownText || "A carregar..."}
@@ -303,25 +312,29 @@ export default function App() {
           )}
         </section>
 
+        {/* Links de Canais e Redes Sociais */}
         <section className="py-3 shrink-0">
           <div className="grid grid-cols-4 gap-2.5">
-            <SocialButton href={SOCIALS.facebook} label="Facebook" icon={
-              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-            } />
+            <SocialButton href={SOCIALS.website} label="Web" icon={<Globe className="size-4" />} />
             <SocialButton href={SOCIALS.instagram} label="Instagram" icon={
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            } />
+            <SocialButton href={SOCIALS.facebook} label="Facebook" icon={
+              <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
             } />
             <SocialButton href={SOCIALS.spotify} label="Spotify" icon={
               <svg viewBox="0 0 24 24" className="size-4" fill="currentColor">
                 <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
               </svg>
             } />
-            <SocialButton href={SOCIALS.website} label="Web" icon={<Globe className="size-4" />} />
           </div>
         </section>
 
         <section className="py-3 shrink-0">
-          <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2">Programas</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500">Programas em Direto</h2>
+            <span className="text-[9px] text-amber-500/80 font-medium">Na Rádio Marcoense 93.3 FM</span>
+          </div>
           <div className="space-y-2">
             {SHOWS_CONFIG.map((s) => (
               <div key={s.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2.5">
