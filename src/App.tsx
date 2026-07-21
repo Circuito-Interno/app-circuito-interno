@@ -120,8 +120,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    audioRef.current = new Audio();
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
     const a = audioRef.current;
+    a.volume = muted ? 0 : volume;
 
     const handlePlaying = () => { setPlaying(true); setLoading(false); setError(null); };
     const handlePause = () => setPlaying(false);
@@ -157,11 +160,24 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
+  // Atualizar o áudio instantaneamente sempre que o volume ou o mute mudam
+  const handleVolumeChange = (newVol: number) => {
+    setVolume(newVol);
+    setMuted(false);
     if (audioRef.current) {
-      audioRef.current.volume = muted ? 0 : volume;
+      audioRef.current.volume = newVol;
+      audioRef.current.muted = false;
     }
-  }, [volume, muted]);
+  };
+
+  const handleMuteToggle = () => {
+    const nextMuted = !muted;
+    setMuted(nextMuted);
+    if (audioRef.current) {
+      audioRef.current.muted = nextMuted;
+      audioRef.current.volume = nextMuted ? 0 : volume;
+    }
+  };
 
   const toggle = async () => {
     const a = audioRef.current;
@@ -178,6 +194,8 @@ export default function App() {
       setError(null);
       setLoading(true);
       a.src = STREAM_URL + "?nocache=" + new Date().getTime();
+      a.volume = muted ? 0 : volume;
+      a.muted = muted;
       await a.play();
       fetchNowPlaying();
     } catch (e) {
@@ -283,15 +301,23 @@ export default function App() {
             </div>
           </div>
 
-          {/* Controlo de Volume */}
+          {/* Controlo de Volume Atualizado e Totalmente Funcional */}
           <div className="mt-4 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl">
             <div className="flex items-center gap-3">
-              <button onClick={() => setMuted((m) => !m)} className="text-neutral-400 hover:text-white transition">
+              <button 
+                onClick={handleMuteToggle} 
+                className="text-neutral-400 hover:text-white transition cursor-pointer"
+                title={muted ? "Ativar som" : "Desativar som"}
+              >
                 {muted || volume === 0 ? <VolumeX className="size-4 text-red-400" /> : <Volume2 className="size-4" />}
               </button>
               <input
-                type="range" min={0} max={1} step={0.01} value={muted ? 0 : volume}
-                onChange={(e) => { setMuted(false); setVolume(parseFloat(e.target.value)); }}
+                type="range" 
+                min={0} 
+                max={1} 
+                step={0.01} 
+                value={muted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                 className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-amber-500 cursor-pointer"
               />
               <span className="text-xs tabular-nums text-neutral-400 w-6 text-right font-medium">
@@ -312,7 +338,7 @@ export default function App() {
           )}
         </section>
 
-        {/* OS 5 CANAIS NA MESMA LINHA COM SVG PURO DO YOUTUBE */}
+        {/* 5 Canais na mesma linha */}
         <section className="py-3 shrink-0">
           <div className="text-center text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">
             Canais & Redes Sociais
