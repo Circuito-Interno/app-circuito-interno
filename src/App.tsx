@@ -265,93 +265,13 @@ export default function App() {
         {/* Leitor Principal */}
         <section className="flex-1 flex flex-col items-center justify-center py-5">
           
-          {/* Botão de Play com Halo Expansivo de Som */}
+          {/* Botão de Play com Pulsação Suave de Som */}
           <div className="relative my-6 flex items-center justify-center">
-            {/* Anel exterior que expande e encolhe suavemente ao tocar */}
-            {playing && (
-              <div 
-                className={`absolute rounded-full border-2 transition-all duration-1000 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite] pointer-events-none ${
-                  isLive ? "border-red-500/60 size-52" : "border-amber-400/60 size-52"
-                }`} 
-              />
-            )}
-
-            {/* Brilho de fundo com efeito de respiração */}
-            <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-700 pointer-events-none ${
-              playing 
-                ? isLive ? "opacity-70 scale-125 bg-red-600 animate-pulse" : "opacity-60 scale-120 bg-amber-500 animate-pulse"
-                : "opacity-15 scale-90 bg-white/20"
-            }`} />
-            
             <button
               onClick={toggle}
               className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
-                isLive 
-                  ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
-                  : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
-              ) : playing ? (
-                <Pause className="size-14 fill-current" strokeWidth={1} />
-              ) : isLive ? (
-                <Radio className="size-14" strokeWidth={1.5} />
-              ) : (
-                <Music className="size-14 ml-1" strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-
-            <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-700 pointer-events-none ${
-              playing 
-                ? isLive ? "opacity-70 scale-125 bg-red-600" : "opacity-60 scale-115 bg-amber-500"
-                : "opacity-15 scale-90 bg-white/20"
-            }`} />
-            
-            <button
-              onClick={toggle}
-              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
-                isLive 
-                  ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
-                  : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
-              ) : playing ? (
-                <Pause className="size-14 fill-current" strokeWidth={1} />
-              ) : isLive ? (
-                <Radio className="size-14" strokeWidth={1.5} />
-              ) : (
-                <Music className="size-14 ml-1" strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-            
-            <button
-              onClick={toggle}
-              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
-                isLive 
-                  ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
-                  : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
-              ) : playing ? (
-                <Pause className="size-14 fill-current" strokeWidth={1} />
-              ) : isLive ? (
-                <Radio className="size-14" strokeWidth={1.5} />
-              ) : (
-                <Music className="size-14 ml-1" strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-            
-            <button
-              onClick={toggle}
-              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 ${
+                playing ? "button-pulsing" : ""
+              } ${
                 isLive 
                   ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
                   : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
