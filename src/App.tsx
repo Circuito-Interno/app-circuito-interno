@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { 
   Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
-  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star 
+  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle 
 } from "lucide-react";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
@@ -21,12 +21,16 @@ const SHOWS_CONFIG = [
   { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado · 13h00 às 15h00" }
 ];
 
+// CURIOSIDADES, NOTÍCIAS E EFEMÉRIDES DINÂMICAS DO DIA
 const MUSIC_FACTS = [
-  "🎸 Sabias que o solo de 'Stairway to Heaven' foi gravado num único take?",
-  "📻 A Rádio Marcoense acompanha o teu dia com a melhor seleção musical.",
-  "🎹 O piano usado em 'Bohemian Rhapsody' foi o mesmo de 'Hey Jude'.",
-  "💿 'Thriller' de Michael Jackson continua a ser o álbum mais vendido de sempre.",
-  "🎵 Apoia o Circuito Interno partilhando a emissão com os teus amigos!"
+  "📍 Circuito Interno · Emissão emitida com orgulho a partir de Marco de Canaveses!",
+  "🎂 ANIVERSÁRIOS: Parabéns a todos os grandes artistas nascidos neste dia no universo da música.",
+  "🕯️ EM MEMÓRIA: Recordamos os grandes nomes da música que nos deixaram neste dia.",
+  "🎟️ CONCERTOS EM PORTUGAL: Fica atento aos próximos grandes espetáculos a anunciar nas salas nacionais (MEO Arena, Coliseus e festivais).",
+  "🎸 CRÍTICA & NOTÍCIAS: Os últimos lançamentos das tuas bandas favoritas continuam em destaque na nossa emissão.",
+  "💡 CURIOSIDADE: Sabias que 'Bohemian Rhapsody' dos Queen demorou mais de 3 semanas a ser gravada em estúdio?",
+  "📢 SEJA NOSSO PARCEIRO: Promova a sua empresa no Circuito Interno e chegue a milhares de ouvintes! Contacte-nos.",
+  "📲 PARTILHA A APP: Gostas do que ouves? Partilha a aplicação do Circuito Interno com os teus amigos e família!"
 ].join("  ✦  ");
 
 interface SongInfo {
@@ -45,12 +49,18 @@ export default function App() {
   
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showSongRequestModal, setShowSongRequestModal] = useState(false);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [sleepIntervalId, setSleepIntervalId] = useState<any>(null);
   const [history, setHistory] = useState<SongInfo[]>([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [carMode, setCarMode] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Formulário do Pedido de Música
+  const [requestSongName, setRequestSongName] = useState("");
+  const [requestArtist, setRequestArtist] = useState("");
+  const [requestListenerName, setRequestListenerName] = useState("");
 
   const [isLive, setIsLive] = useState(false);
   const [currentShowName, setCurrentShowName] = useState("");
@@ -67,7 +77,7 @@ export default function App() {
           const songArtist = data.now_playing.song.artist || "Circuito Interno";
           
           const mainTitle = isLive ? `Circuito Interno · ${currentShowName}` : "Circuito Interno";
-          const subtitleArtist = isLive ? "Rádio Marcoense 93.3 FM" : `${songArtist} - ${songTitle}`;
+          const subtitleArtist = isLive ? "Marco de Canaveses" : `${songArtist} - ${songTitle}`;
           const artworkUrl = data.now_playing.song.art || "/logo.png";
 
           const newSong = {
@@ -292,6 +302,19 @@ export default function App() {
     }
   };
 
+  const sendSongRequestToWhatsApp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestSongName || !requestArtist) return;
+
+    const message = `Olá Paulo! Sou o/a ${requestListenerName || "Ouvinte"} e gostaria de pedir a música: "${requestSongName}" de ${requestArtist}. Obrigado!`;
+    const whatsappUrl = `https://wa.me/351963350373?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+    setShowSongRequestModal(false);
+    setRequestSongName("");
+    setRequestArtist("");
+    setRequestListenerName("");
+  };
+
   if (carMode) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between p-6 select-none">
@@ -314,7 +337,7 @@ export default function App() {
             {isLive ? currentShowName : (currentSong?.title || "Música no Ar")}
           </div>
           <div className="text-base text-neutral-400 font-medium">
-            {isLive ? "Rádio Marcoense 93.3 FM" : (currentSong?.artist || "Rádio Circuito Interno")}
+            {isLive ? "Marco de Canaveses" : (currentSong?.artist || "Rádio Circuito Interno")}
           </div>
         </div>
 
@@ -362,6 +385,16 @@ export default function App() {
           </button>
 
           <div className="flex items-center gap-2">
+            {/* NOVO: Botão Pedir Música */}
+            <button 
+              onClick={() => setShowSongRequestModal(true)} 
+              className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-black transition cursor-pointer font-bold text-[10px] uppercase"
+              title="Pedir Música"
+            >
+              <MessageCircle className="size-3.5" />
+              <span>Pedir Música</span>
+            </button>
+
             {history.length > 0 && (
               <button 
                 onClick={() => setShowHistoryModal(true)} 
@@ -413,7 +446,11 @@ export default function App() {
             Circuito Interno
           </h1>
 
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg ${
+          <div className="text-[11px] font-medium text-neutral-400 tracking-wide flex items-center gap-1">
+            <span>Marco de Canaveses</span> · <span className="text-amber-400 font-semibold">Emissão Online 24/7</span>
+          </div>
+
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-0.5 ${
             isLive 
               ? "border-red-500/40 bg-red-500/15 text-red-400 shadow-red-500/10" 
               : "border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-amber-500/5"
@@ -422,7 +459,7 @@ export default function App() {
               <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/80" : "bg-amber-500/80"} ${playing ? "animate-ping" : ""}`}></span>
               <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
             </span>
-            {isLive ? `Em Direto · ${currentShowName}` : "Emissão Online 24/7"}
+            {isLive ? `Em Direto · ${currentShowName}` : "Sinal Activo"}
           </div>
         </header>
 
@@ -475,12 +512,12 @@ export default function App() {
                 {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
               </div>
               <div className="text-[11px] text-neutral-400 truncate font-medium">
-                {isLive ? "Rádio Marcoense · 93.3 FM" : (currentSong?.artist || "Rádio Circuito Interno")}
+                {isLive ? "Marco de Canaveses" : (currentSong?.artist || "Rádio Circuito Interno")}
               </div>
             </div>
           </div>
 
-          {/* Ticker Deslizante de Notícias/Curiosidades */}
+          {/* Ticker Deslizante com Informações de Música e Notícias */}
           <div className="mt-3.5 w-full max-w-xs overflow-hidden rounded-lg bg-amber-500/[0.03] border border-amber-500/10 py-2 relative shadow-inner">
             <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#080808] to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#080808] to-transparent z-10 pointer-events-none" />
@@ -517,7 +554,7 @@ export default function App() {
           {!isLive && (
             <div className="mt-3.5 w-full max-w-xs bg-amber-500/[0.04] border border-amber-500/15 p-3.5 rounded-xl text-center backdrop-blur-md">
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-400 font-bold tracking-widest uppercase">
-                <Clock className="size-3.5" /> Próximo programa na Rádio Marcoense:
+                <Clock className="size-3.5" /> Próximo programa em Direto:
               </div>
               <div className="text-base font-mono font-bold text-neutral-100 mt-1 tracking-wider tabular-nums">
                 {countdownText || "A carregar..."}
@@ -555,7 +592,7 @@ export default function App() {
         {/* Programação */}
         <section className="py-2 shrink-0">
           <div className="text-center text-[10px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
-            Programação em Direto · Rádio Marcoense 93.3 FM
+            Programação em Direto
           </div>
           <div className="space-y-2">
             {SHOWS_CONFIG.map((s) => (
@@ -600,13 +637,13 @@ export default function App() {
             <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
               <div className="flex items-center gap-1.5 text-neutral-400">
                 <Star className="size-3.5" />
-                <span className="text-xs font-bold uppercase tracking-wide">Apoio 1</span>
+                <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
               </div>
             </div>
             <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
               <div className="flex items-center gap-1.5 text-neutral-400">
                 <Star className="size-3.5" />
-                <span className="text-xs font-bold uppercase tracking-wide">Apoio 2</span>
+                <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
               </div>
             </div>
           </div>
@@ -634,7 +671,7 @@ export default function App() {
           
           {/* Rodapé */}
           <div className="mt-6 flex flex-col items-center justify-center gap-1.5 text-[10px] text-neutral-500 font-light tracking-wide">
-            <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
+            <div className="font-medium text-neutral-400">© Circuito Interno 2026 · Marco de Canaveses</div>
             <button 
               onClick={() => setShowPrivacyModal(true)} 
               className="text-neutral-500 hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
@@ -646,7 +683,66 @@ export default function App() {
 
       </div>
 
-      {/* Modais */}
+      {/* MODAL: Pedir Música */}
+      {showSongRequestModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl">
+            <button onClick={() => setShowSongRequestModal(false)} className="absolute top-4 right-4 text-neutral-400 hover:text-white cursor-pointer">
+              <X className="size-5" />
+            </button>
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-3">
+              <MessageCircle className="size-5" /> Pedir uma Música
+            </div>
+            <p className="text-xs text-neutral-400 mb-4">Envia o teu pedido diretamente para o WhatsApp da rádio:</p>
+
+            <form onSubmit={sendSongRequestToWhatsApp} className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-neutral-400 block mb-1">Nome da Música *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ex: Hotel California" 
+                  value={requestSongName}
+                  onChange={(e) => setRequestSongName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-neutral-400 block mb-1">Artista / Banda *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Ex: Eagles" 
+                  value={requestArtist}
+                  onChange={(e) => setRequestArtist(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-neutral-400 block mb-1">O teu Nome (Opcional)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Maria" 
+                  value={requestListenerName}
+                  onChange={(e) => setRequestListenerName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="mt-2 w-full bg-emerald-500 text-black font-bold text-xs py-2.5 rounded-xl hover:bg-emerald-400 transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Send className="size-3.5" /> Enviar Pedido no WhatsApp
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Sleep Timer */}
       {showSleepModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl text-center">
@@ -680,6 +776,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL: Músicas Recentes */}
       {showHistoryModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl">
@@ -710,6 +807,7 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL: Privacidade */}
       {showPrivacyModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-sm w-full p-5 text-neutral-300 relative shadow-2xl">
