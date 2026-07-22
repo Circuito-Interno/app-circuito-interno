@@ -4,6 +4,8 @@ import {
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle, RefreshCw 
 } from "lucide-react";
 
+const APP_BUILD_ID = "v1.0.2";
+
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
@@ -43,9 +45,7 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Detetor de Nova Versão
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
 
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
@@ -67,27 +67,25 @@ export default function App() {
   const [currentSong, setCurrentSong] = useState<SongInfo | null>(null);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.addEventListener("updatefound", () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                setUpdateAvailable(true);
-                setWaitingWorker(newWorker);
-              }
-            });
+    const checkVersion = async () => {
+      try {
+        const res = await fetch("/index.html?nocache=" + new Date().getTime());
+        if (res.ok) {
+          const text = await res.text();
+          if (text.includes("app-build-id") && !text.includes(`app-build-id="${APP_BUILD_ID}"`)) {
+            setUpdateAvailable(true);
           }
-        });
-      });
-    }
+        }
+      } catch (e) {
+        console.error("Erro ao verificar versão:", e);
+      }
+    };
+
+    const interval = setInterval(checkVersion, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleApplyUpdate = () => {
-    if (waitingWorker) {
-      waitingWorker.postMessage({ type: "SKIP_WAITING" });
-    }
     window.location.reload();
   };
 
