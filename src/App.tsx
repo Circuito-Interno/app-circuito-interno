@@ -4,7 +4,7 @@ import {
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle, RefreshCw 
 } from "lucide-react";
 
-const APP_BUILD_ID = "v1.0.2";
+const APP_BUILD_ID = "v1.0.3";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
