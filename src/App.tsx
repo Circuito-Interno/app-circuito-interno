@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, Globe, ShieldCheck, X, Mic, Send } from "lucide-react";
+import { 
+  Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
+  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Smartphone 
+} from "lucide-react";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
@@ -31,8 +34,17 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
+  // Modais e Estados Extras
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showSleepModal, setShowSleepModal] = useState(false);
+  const [sleepTimer, setSleepTimer] = useState<number | null>(null); // minutos restantes
+  const [sleepIntervalId, setSleepIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [history, setHistory] = useState<SongInfo[]>([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [carMode, setCarMode] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const [isLive, setIsLive] = useState(false);
   const [currentShowName, setCurrentShowName] = useState("");
   const [countdownText, setCountdownText] = useState("");
@@ -49,23 +61,28 @@ export default function App() {
           
           const mainTitle = isLive ? `Circuito Interno · ${currentShowName}` : "Circuito Interno";
           const subtitleArtist = isLive ? "Rádio Marcoense 93.3 FM" : `${songArtist} - ${songTitle}`;
-          
           const artworkUrl = data.now_playing.song.art || "/logo.png";
 
-          setCurrentSong({
+          const newSong = {
             title: songTitle,
             artist: songArtist,
             art: data.now_playing.song.art || ""
+          };
+
+          setCurrentSong((prev) => {
+            if (prev && (prev.title !== newSong.title || prev.artist !== newSong.artist)) {
+              setHistory((h) => [prev, ...h.filter(s => s.title !== prev.title)].slice(0, 5));
+            }
+            return newSong;
           });
 
+          // PWA / MediaSession
           if ("mediaSession" in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
               title: mainTitle,
               artist: subtitleArtist,
               album: "Emissão 24/7",
-              artwork: [
-                { src: artworkUrl, sizes: "512x512", type: "image/png" }
-              ]
+              artwork: [{ src: artworkUrl, sizes: "512x512", type: "image/png" }]
             });
           }
         }
@@ -178,6 +195,38 @@ export default function App() {
     };
   }, []);
 
+  // Lógica do Sleep Timer
+  const startSleepTimer = (minutes: number) => {
+    if (sleepIntervalId) clearInterval(sleepIntervalId);
+    
+    if (minutes === 0) {
+      setSleepTimer(null);
+      setShowSleepModal(false);
+      return;
+    }
+
+    setSleepTimer(minutes);
+    setShowSleepModal(false);
+
+    let secondsLeft = minutes * 60;
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+        setPlaying(false);
+        setSleepTimer(null);
+      } else {
+        setSleepTimer(Math.ceil(secondsLeft / 60));
+      }
+    }, 1000);
+
+    setSleepIntervalId(interval);
+  };
+
   const handleVolumeChange = (newVol: number) => {
     setVolume(newVol);
     setMuted(false);
@@ -224,6 +273,69 @@ export default function App() {
     }
   };
 
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: "Rádio Circuito Interno",
+        text: "Estou a ouvir a Rádio Circuito Interno em direto! Vem ouvir também:",
+        url: window.location.href,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // MODO CARRO (Interface Simplificada e Gigante)
+  if (carMode) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-between p-6 select-none">
+        <div className="w-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Car className="size-6 text-amber-500" />
+            <span className="font-extrabold text-sm uppercase tracking-wider text-amber-500">Modo Carro</span>
+          </div>
+          <button 
+            onClick={() => setCarMode(false)}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl font-bold text-xs uppercase"
+          >
+            Sair
+          </button>
+        </div>
+
+        <div className="text-center space-y-3 my-auto">
+          <div className="text-2xl font-black text-amber-400">Circuito Interno</div>
+          <div className="text-xl font-bold text-white truncate max-w-xs mx-auto">
+            {isLive ? currentShowName : (currentSong?.title || "Música no Ar")}
+          </div>
+          <div className="text-base text-neutral-400 font-medium">
+            {isLive ? "Rádio Marcoense 93.3 FM" : (currentSong?.artist || "Rádio Circuito Interno")}
+          </div>
+        </div>
+
+        <button
+          onClick={toggle}
+          className={`w-full py-12 rounded-3xl font-black text-2xl flex items-center justify-center gap-4 transition active:scale-95 shadow-2xl ${
+            isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
+          }`}
+        >
+          {loading ? (
+            <Loader2 className="size-16 animate-spin" />
+          ) : playing ? (
+            <>
+              <Pause className="size-12 fill-current" /> PARAR
+            </>
+          ) : (
+            <>
+              <Radio className="size-12" /> OUVIR EM DIRETO
+            </>
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#080808] text-neutral-100 flex flex-col antialiased selection:bg-amber-500 selection:text-black">
       <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-5">
@@ -234,8 +346,56 @@ export default function App() {
           </div>
         )}
 
+        {/* Barra Superior de Ações Rápidas */}
+        <div className="pt-4 flex items-center justify-between text-neutral-400 text-xs font-medium">
+          <button 
+            onClick={() => setCarMode(true)} 
+            className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg hover:text-white hover:border-amber-500/40 transition cursor-pointer"
+            title="Modo Carro"
+          >
+            <Car className="size-3.5 text-amber-400" />
+            <span className="text-[10px] font-bold uppercase">Modo Carro</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            {history.length > 0 && (
+              <button 
+                onClick={() => setShowHistoryModal(true)} 
+                className="p-1.5 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer"
+                title="Músicas Recentes"
+              >
+                <History className="size-4 text-amber-400" />
+              </button>
+            )}
+
+            <button 
+              onClick={() => setShowSleepModal(true)} 
+              className={`flex items-center gap-1 p-1.5 bg-white/5 border rounded-lg transition cursor-pointer ${
+                sleepTimer !== null ? "border-amber-500 text-amber-400" : "border-white/10 hover:text-white"
+              }`}
+              title="Temporizador de Adormecer"
+            >
+              <Moon className="size-4" />
+              {sleepTimer !== null && <span className="text-[10px] font-mono font-bold">{sleepTimer}m</span>}
+            </button>
+
+            <button 
+              onClick={handleShare} 
+              className="p-1.5 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer relative"
+              title="Partilhar"
+            >
+              <Share2 className="size-4 text-amber-400" />
+              {copied && (
+                <span className="absolute -bottom-7 right-0 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                  Copiado!
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
         {/* Topo / Header */}
-        <header className="pt-8 pb-3 text-center shrink-0 flex flex-col items-center gap-2">
+        <header className="pt-4 pb-3 text-center shrink-0 flex flex-col items-center gap-2">
           <div className="relative group cursor-pointer">
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
             <img 
@@ -265,7 +425,6 @@ export default function App() {
         {/* Leitor Principal */}
         <section className="flex-1 flex flex-col items-center justify-center py-5">
           
-          {/* Botão de Play com Pulsação Suave de Som */}
           <div className="relative my-6 flex items-center justify-center">
             <button
               onClick={toggle}
@@ -289,8 +448,8 @@ export default function App() {
             </button>
           </div>
 
-          {/* Cartão "A Tocar Agora" em Glassmorphism */}
-          <div className="mt-6 w-full max-w-xs bg-white/[0.04] border border-white/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-xl backdrop-blur-xl">
+          {/* Cartão "A Tocar Agora" */}
+          <div className="mt-4 w-full max-w-xs bg-white/[0.04] border border-white/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-xl backdrop-blur-xl">
             {currentSong && currentSong.art ? (
               <img 
                 src={currentSong.art} 
@@ -317,7 +476,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Controlo de Volume Integrado */}
+          {/* Controlo de Volume */}
           <div className="mt-3.5 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl backdrop-blur-md">
             <div className="flex items-center gap-3">
               <button 
@@ -410,7 +569,7 @@ export default function App() {
             ))}
           </div>
 
-          {/* Cartão do Autor elegante */}
+          {/* Autor */}
           <div className="mt-3.5 p-3 rounded-xl border border-amber-500/10 bg-amber-500/[0.02] flex items-center justify-center gap-2.5 text-center">
             <Mic className="size-4 text-amber-400 shrink-0" />
             <div className="text-xs text-neutral-300">
@@ -444,7 +603,7 @@ export default function App() {
           <div className="mt-6 flex flex-col items-center justify-center gap-1.5 text-[10px] text-neutral-500 font-light tracking-wide">
             <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
             <button 
-              onClick={() => setShowPrivacyModal(false)} 
+              onClick={() => setShowPrivacyModal(true)} 
               className="text-neutral-500 hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
             >
               Política de Privacidade
@@ -454,41 +613,97 @@ export default function App() {
 
       </div>
 
+      {/* Modal Sleep Timer */}
+      {showSleepModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl text-center">
+            <button onClick={() => setShowSleepModal(false)} className="absolute top-4 right-4 text-neutral-400 hover:text-white">
+              <X className="size-5" />
+            </button>
+
+            <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-sm mb-4">
+              <Moon className="size-5" /> Temporizador de Adormecer
+            </div>
+
+            <p className="text-xs text-neutral-400 mb-4">A rádio desliga-se automaticamente após o tempo selecionado:</p>
+
+            <div className="grid grid-cols-2 gap-2">
+              {[15, 30, 45, 60].map((mins) => (
+                <button
+                  key={mins}
+                  onClick={() => startSleepTimer(mins)}
+                  className="py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-white hover:bg-amber-500 hover:text-black transition"
+                >
+                  {mins} Minutos
+                </button>
+              ))}
+            </div>
+
+            {sleepTimer !== null && (
+              <button
+                onClick={() => startSleepTimer(0)}
+                className="mt-3 w-full py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold"
+              >
+                Desativar Temporizador
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Músicas Recentes */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl">
+            <button onClick={() => setShowHistoryModal(false)} className="absolute top-4 right-4 text-neutral-400 hover:text-white">
+              <X className="size-5" />
+            </button>
+
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-4">
+              <History className="size-5" /> Músicas Recentes
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {history.map((song, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-2 bg-white/5 rounded-xl border border-white/5">
+                  {song.art ? (
+                    <img src={song.art} alt="" className="size-9 rounded-lg object-cover" />
+                  ) : (
+                    <div className="size-9 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-400">
+                      <Music className="size-4" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1 text-xs">
+                    <div className="font-bold text-white truncate">{song.title}</div>
+                    <div className="text-[10px] text-neutral-400 truncate">{song.artist}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de Privacidade */}
       {showPrivacyModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-sm w-full p-5 text-neutral-300 relative shadow-2xl">
-            <button 
-              onClick={() => setShowPrivacyModal(false)}
-              className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1"
-            >
+            <button onClick={() => setShowPrivacyModal(false)} className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1">
               <X className="size-5" />
             </button>
 
             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-3">
-              <ShieldCheck className="size-5" />
-              Política de Privacidade
+              <ShieldCheck className="size-5" /> Política de Privacidade
             </div>
 
             <div className="text-xs space-y-2.5 text-neutral-300 leading-relaxed max-h-[60vh] overflow-y-auto pr-1 font-light">
-              <p>
-                A aplicação <strong>Circuito Interno</strong> respeita integralmente a sua privacidade.
-              </p>
-              <p>
-                • <strong>Sem recolha de dados:</strong> Não recolhemos, armazenamos ou partilhamos informações pessoais, localização ou histórico de navegação.
-              </p>
-              <p>
-                • <strong>Emissão de Áudio:</strong> O leitor apenas acede à transmissão de áudio em direto e metadados das músicas para reprodução em tempo real.
-              </p>
-              <p>
-                • <strong>Contacto:</strong> Para qualquer questão, contacte circuitointernoproducoes@gmail.com.
-              </p>
+              <p>A aplicação <strong>Circuito Interno</strong> respeita integralmente a sua privacidade.</p>
+              <p>• <strong>Sem recolha de dados:</strong> Não recolhemos ou armazenamos dados pessoais.</p>
+              <p>• <strong>Emissão de Áudio:</strong> Transmissão de áudio em direto e metadados das músicas.</p>
+              <p>• <strong>Contacto:</strong> circuitointernoproducoes@gmail.com.</p>
             </div>
 
-            <button 
-              onClick={() => setShowPrivacyModal(false)}
-              className="mt-5 w-full bg-amber-500 text-black font-bold text-xs py-2.5 rounded-xl hover:bg-amber-400 transition"
-            >
+            <button onClick={() => setShowPrivacyModal(false)} className="mt-5 w-full bg-amber-500 text-black font-bold text-xs py-2.5 rounded-xl hover:bg-amber-400 transition">
               Compreendido
             </button>
           </div>
