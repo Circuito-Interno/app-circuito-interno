@@ -19,7 +19,6 @@
   animation: circularPulse 1.2s infinite ease-in-out !important;
 }
 
-/* NOVO TICKER CONTINUO E INSTANTÂNEO */
 @keyframes tickerLoop {
   0% {
     transform: translateX(0%);
@@ -32,7 +31,8 @@
 @utility animate-ticker {
   display: inline-flex;
   white-space: nowrap;
-  animation: tickerLoop 45s linear infinite;
+  /* 120s garante um movimento super lento e legivel */
+  animation: tickerLoop 120s linear infinite;
 }
 
 .animate-ticker:hover {

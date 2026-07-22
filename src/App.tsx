@@ -21,13 +21,13 @@ const SHOWS_CONFIG = [
   { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado · 13h00 às 15h00" }
 ];
 
-// CURIOSIDADES, NOTÍCIAS, EFEMÉRIDES E AGENDA DE CONCERTOS EM PORTUGAL (22 DE JULHO)
+// CURIOSIDADES, EFEMÉRIDES ESPECÍFICAS DE HOJE (22 JULHO) E AGENDA COM ARTISTAS
 const MUSIC_FACTS = [
-  "🎂 PARABÉNS HOJE (22 JULHO): Don Henley (Eagles) celebra 79 anos ✦ Al Di Meola festeja 72 anos ✦ George Clinton (Parliament-Funkadelic) comemora 85 anos ✦ Pat Badger (Extreme) faz 59 anos!",
-  "🕯️ EM MEMÓRIA (22 JULHO): Recordamos Duke Fakir, vocalista e fundador dos The Four Tops (falecido em 2024) e Phillip Walker (mestre do blues, falecido em 2010).",
-  "🎟️ AGENDA CONCERTOS PORTUGAL: Sol da Caparica (13-16 Ago, Costa da Caparica) ✦ Vodafone Paredes de Coura (12-15 Ago, Coura) ✦ CA Vilar de Mouros (20-22 Ago, Caminha) ✦ MEO Kalorama (28-30 Ago, Parque da Bela Vista, Lisboa) ✦ Laura Pausini (22 Out, MEO Arena, Lisboa) ✦ Bryan Adams (17-18 Nov, MEO Arena, Lisboa).",
-  "📢 SEJA NOSSO PARCEIRO: Promova a sua empresa no Circuito Interno e chegue a milhares de ouvintes! Contacte-nos via WhatsApp ou Email.",
-  "📲 PARTILHA A APP: Gostas da nossa seleção musical? Clica no ícone de partilha no topo e envia a aplicação do Circuito Interno aos teus amigos!"
+  "🎂 NASCERAM NESTE DIA (22 JULHO): Don Henley (Eagles) celebra 79 anos ✦ Al Di Meola (lenda da guitarra) faz 72 anos ✦ George Clinton (Parliament-Funkadelic) faz 85 anos ✦ Pat Badger (Extreme) faz 59 anos!",
+  "🕯️ EM MEMÓRIA (22 JULHO): Homenagem a Duke Fakir (fundador dos The Four Tops, falecido em 2024), Phillip Walker (mestre do blues) e Rob McConnell (lenda do jazz).",
+  "🎟️ AGENDA & FESTIVAIS EM PORTUGAL: F. Mêda+ (22-25 Julho com Da Chick) ✦ Barrelas Summer Fest (24-25 Julho com Xutos & Pontapés, Slow J e Morcheeba) ✦ Morrissey (1 Ago, Super Bock Arena) ✦ MEO Monte Verde (6-8 Ago com Two Door Cinema Club e Calema) ✦ Paredes de Coura (12-15 Ago com Fontaines D.C.) ✦ Vilar de Mouros (20-22 Ago com Queens of the Stone Age) ✦ MEO Kalorama (28-30 Ago com Robbie Williams e Deftones).",
+  "📢 SEJA NOSSO PARCEIRO: Promova a sua marca no Circuito Interno e chegue a milhares de ouvintes em todo o país! Contacte-nos.",
+  "📲 PARTILHA A APP: Gostas da nossa seleção musical? Clica no botão de partilha no topo e envia aos teus amigos!"
 ].join("  ✦  ");
 
 interface SongInfo {
