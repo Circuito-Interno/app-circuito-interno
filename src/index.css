@@ -1,19 +1,21 @@
 @import "tailwindcss";
+
 @keyframes circularPulse {
   0% {
     transform: scale(0.96);
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.85); /* Laranja vibrante do logo */
   }
   70% {
-    transform: scale(1.04);
-    box-shadow: 0 0 0 22px rgba(245, 158, 11, 0);
+    transform: scale(1.05);
+    box-shadow: 0 0 0 28px rgba(249, 115, 22, 0); /* Expansão maior e suave */
   }
   100% {
     transform: scale(0.96);
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
   }
 }
 
 .button-pulsing {
-  animation: circularPulse 2s infinite ease-in-out !important;
+  /* Ritmo reduzido para 1.2s para ser mais rápido e dinâmico */
+  animation: circularPulse 1.2s infinite ease-in-out !important;
 }
