@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { 
   Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
-  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle 
+  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle, RefreshCw 
 } from "lucide-react";
+
+// VERSÃO ATUAL DO CÓDIGO
+const CURRENT_VERSION = "1.0.3";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
@@ -43,6 +46,8 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showSongRequestModal, setShowSongRequestModal] = useState(false);
@@ -61,6 +66,31 @@ export default function App() {
   const [currentShowName, setCurrentShowName] = useState("");
   const [countdownText, setCountdownText] = useState("");
   const [currentSong, setCurrentSong] = useState<SongInfo | null>(null);
+
+  // Verificação de Versão em Tempo Real a cada 10 segundos
+  useEffect(() => {
+    const checkServerVersion = async () => {
+      try {
+        const res = await fetch("/version.json?t=" + new Date().getTime(), { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version && data.version !== CURRENT_VERSION) {
+            setUpdateAvailable(true);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao verificar nova versão:", e);
+      }
+    };
+
+    checkServerVersion();
+    const interval = setInterval(checkServerVersion, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleApplyUpdate = () => {
+    window.location.reload();
+  };
 
   const fetchNowPlaying = async () => {
     try {
@@ -361,8 +391,24 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#080808] text-neutral-100 flex flex-col antialiased selection:bg-amber-500 selection:text-black">
       
-      {/* CONTAINER PRINCIPAL TOTALMENTE EXPANDIDO E FLUIDO */}
-      <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col px-4 sm:px-8 py-6">
+      {/* BANNER FLUTUANTE EM AMANHO DESTACADO SE HOUVER ATUALIZAÇÃO */}
+      {updateAvailable && (
+        <div className="w-full bg-amber-500 text-black font-black py-3 px-6 flex items-center justify-between shadow-2xl z-50 border-b-2 border-black/20 animate-pulse">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm uppercase tracking-wider">
+            <RefreshCw className="size-5 animate-spin shrink-0 text-black" />
+            <span>NOVA VERSÃO DO CIRCUITO INTERNO DISPONÍVEL!</span>
+          </div>
+          <button 
+            onClick={handleApplyUpdate}
+            className="bg-black text-white text-xs font-black uppercase px-4 py-2 rounded-xl hover:bg-neutral-800 transition cursor-pointer shadow-lg active:scale-95"
+          >
+            Atualizar Agora
+          </button>
+        </div>
+      )}
+
+      {/* CONTAINER TOTALMENTE EXPANDIDO E FLUIDO (OCUPA A TELA INTEIRA DO PC) */}
+      <div className="w-full flex-1 flex flex-col px-4 sm:px-8 lg:px-12 py-6">
         
         {error && (
           <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-200 backdrop-blur-md">
@@ -371,7 +417,7 @@ export default function App() {
         )}
 
         {/* Barra Superior de Ações Rápidas */}
-        <div className="flex items-center justify-between text-neutral-400 text-xs font-medium pb-4 border-b border-white/5">
+        <div className="w-full flex items-center justify-between text-neutral-400 text-xs font-medium pb-4 border-b border-white/5">
           <button 
             onClick={() => setCarMode(true)} 
             className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg hover:text-white hover:border-amber-500/40 transition cursor-pointer"
@@ -427,11 +473,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* ESTRUTURA EXPANDIDA (GRELHA 2 COLUNAS NO PC QUE OCUPA O ECRÃ INTEIRO) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-stretch my-auto py-6">
+        {/* ESTRUTURA GRELHA PROPORCIONAL QUE PREENCHE O ECRÃ INTEIRO DO PC */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch my-auto py-6">
           
-          {/* PAINEL ESQUERDO: LEITOR E EMISSÃO (Ocupa 6 Colunas no PC) */}
-          <div className="md:col-span-6 flex flex-col items-center justify-center text-center space-y-6 bg-white/[0.01] border border-white/5 p-6 sm:p-10 rounded-3xl shadow-2xl backdrop-blur-md w-full">
+          {/* PAINEL ESQUERDO: LEITOR E CONTROLOS (6 COLUNAS DE 12 NO PC) */}
+          <div className="lg:col-span-6 flex flex-col items-center justify-center text-center space-y-6 bg-white/[0.01] border border-white/5 p-6 sm:p-10 rounded-3xl shadow-2xl backdrop-blur-md w-full">
             
             {/* Header / Logo */}
             <div className="flex flex-col items-center gap-2">
@@ -440,7 +486,7 @@ export default function App() {
                 <img 
                   src="/logo.png" 
                   alt="Circuito Interno Logo" 
-                  className="relative h-16 sm:h-20 w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.35)]" 
+                  className="relative h-16 sm:h-24 w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.35)]" 
                 />
               </div>
 
@@ -448,7 +494,7 @@ export default function App() {
                 Circuito Interno
               </h1>
 
-              <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-1 ${
+              <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-1 ${
                 isLive 
                   ? "border-red-500/40 bg-red-500/15 text-red-400 shadow-red-500/10" 
                   : "border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-amber-500/5"
@@ -465,7 +511,7 @@ export default function App() {
             <div className="relative py-2 flex items-center justify-center">
               <button
                 onClick={toggle}
-                className={`relative size-44 sm:size-52 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
+                className={`relative size-44 sm:size-56 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
                   playing ? "button-pulsing" : ""
                 } ${
                   isLive 
@@ -474,18 +520,18 @@ export default function App() {
                 }`}
               >
                 {loading ? (
-                  <Loader2 className="size-16 sm:size-20 animate-spin" strokeWidth={1.5} />
+                  <Loader2 className="size-16 sm:size-24 animate-spin" strokeWidth={1.5} />
                 ) : playing ? (
-                  <Pause className="size-16 sm:size-20 fill-current" strokeWidth={1} />
+                  <Pause className="size-16 sm:size-24 fill-current" strokeWidth={1} />
                 ) : isLive ? (
-                  <Radio className="size-16 sm:size-20" strokeWidth={1.5} />
+                  <Radio className="size-16 sm:size-24" strokeWidth={1.5} />
                 ) : (
-                  <Music className="size-16 sm:size-20 ml-1" strokeWidth={1.5} />
+                  <Music className="size-16 sm:size-24 ml-1" strokeWidth={1.5} />
                 )}
               </button>
             </div>
 
-            {/* Cartão "A Tocar Agora" Expandido */}
+            {/* Cartão "A Tocar Agora" */}
             <div className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-2xl flex items-center gap-4 shadow-xl backdrop-blur-xl">
               {currentSong && currentSong.art ? (
                 <img 
@@ -504,7 +550,7 @@ export default function App() {
                   <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
                   {isLive ? "No Ar Agora" : "A Tocar Agora"}
                 </div>
-                <div className="text-sm sm:text-base font-bold text-white truncate mt-0.5">
+                <div className="text-sm sm:text-lg font-bold text-white truncate mt-0.5">
                   {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
                 </div>
                 <div className="text-xs sm:text-sm text-neutral-400 truncate font-medium">
@@ -553,18 +599,18 @@ export default function App() {
                 <div className="flex items-center justify-center gap-2 text-xs text-amber-400 font-bold tracking-widest uppercase">
                   <Clock className="size-4" /> Próximo programa em Direto:
                 </div>
-                <div className="text-base sm:text-lg font-mono font-bold text-neutral-100 mt-1 tracking-wider tabular-nums">
+                <div className="text-base sm:text-xl font-mono font-bold text-neutral-100 mt-1 tracking-wider tabular-nums">
                   {countdownText || "A carregar..."}
                 </div>
               </div>
             )}
           </div>
 
-          {/* PAINEL DIREITO: INFORMAÇÕES E AGENDA EXPANDIDA (Ocupa 6 Colunas no PC) */}
-          <div className="md:col-span-6 flex flex-col justify-between space-y-6">
+          {/* PAINEL DIREITO: INFORMAÇÕES E PROGRAMAÇÃO (6 COLUNAS DE 12 NO PC) */}
+          <div className="lg:col-span-6 flex flex-col justify-between space-y-6 w-full">
             
             {/* Canais Oficiais */}
-            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl">
+            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl w-full">
               <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-4">
                 Canais Oficiais
               </div>
@@ -590,7 +636,7 @@ export default function App() {
             </div>
 
             {/* Programação em Direto */}
-            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl">
+            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl w-full">
               <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-4">
                 Programação em Direto
               </div>
@@ -629,7 +675,7 @@ export default function App() {
             </div>
 
             {/* Parceiros & Apoios */}
-            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl">
+            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl w-full">
               <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-4">
                 Parceiros & Apoios
               </div>
@@ -650,7 +696,7 @@ export default function App() {
             </div>
 
             {/* Contactos */}
-            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl">
+            <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl w-full">
               <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-4">
                 Contactos do Programa
               </div>
