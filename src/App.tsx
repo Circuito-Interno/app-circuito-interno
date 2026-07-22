@@ -48,9 +48,7 @@ export default function App() {
           const songTitle = data.now_playing.song.title || "Música no Ar";
           const songArtist = data.now_playing.song.artist || "Circuito Interno";
           
-          // Destaque no topo para o Circuito Interno / Programa em direto
           const mainTitle = isLive ? `Circuito Interno · ${currentShowName}` : "Circuito Interno";
-          // Segunda linha com o Artista - Música
           const subtitleArtist = isLive ? "Rádio Marcoense 93.3 FM" : `${songArtist} - ${songTitle}`;
           
           const artworkUrl = data.now_playing.song.art || "/logo.png";
@@ -61,7 +59,6 @@ export default function App() {
             art: data.now_playing.song.art || ""
           });
 
-          // Envia para o ecrã de bloqueio com Circuito Interno no topo
           if ("mediaSession" in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
               title: mainTitle,
@@ -239,7 +236,6 @@ export default function App() {
         )}
 
         <header className="pt-8 pb-4 text-center shrink-0 flex flex-col items-center gap-1.5">
-          
           <div className="mb-2">
             <img 
               src="/logo.png" 
@@ -261,11 +257,9 @@ export default function App() {
             </span>
             {isLive ? `Em Direto: ${currentShowName}` : "Emissão 24/7"}
           </div>
-          
         </header>
 
         <section className="flex-1 flex flex-col items-center justify-center py-4">
-          
           {/* Botão de Play */}
           <div className="relative">
             <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
@@ -383,6 +377,7 @@ export default function App() {
           </div>
         </section>
 
+        {/* Programas em Direto */}
         <section className="py-3 shrink-0">
           <div className="text-center text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2.5">
             Programas em Direto na Rádio Marcoense 93.3 FM
@@ -402,8 +397,15 @@ export default function App() {
               </div>
             ))}
           </div>
+
+          {/* Produção e apresentação logo abaixo dos programas */}
+          <div className="mt-3 text-center text-[11px] text-amber-500/90 font-medium tracking-wide flex flex-col gap-0.5">
+            <span>Produção e apresentação:</span>
+            <span className="font-semibold text-amber-400">Paulo da Rocha Teixeira</span>
+          </div>
         </section>
 
+        {/* Contactos do programa */}
         <section className="pt-3 pb-8 shrink-0">
           <h2 className="text-[10px] uppercase font-bold tracking-[0.2em] text-neutral-500 mb-2">Contactos do programa</h2>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5">
@@ -421,11 +423,10 @@ export default function App() {
             />
           </div>
           
-          <div className="mt-6 text-center text-[10px] text-neutral-600 tracking-wide font-light flex flex-col gap-0.5">
-            <span>Produção e apresentação</span>
-            <span className="font-medium text-neutral-500">Paulo da Rocha Teixeira</span>
-            <span className="mt-1.5 opacity-70">© Circuito Interno 2026</span>
-          </div>
+          {/* Rodapé final simples */}
+          <p className="mt-6 text-center text-[10px] text-neutral-600 font-light tracking-wide">
+            © Circuito Interno
+          </p>
         </section>
 
       </div>
