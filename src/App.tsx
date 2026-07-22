@@ -265,15 +265,35 @@ export default function App() {
         {/* Leitor Principal */}
         <section className="flex-1 flex flex-col items-center justify-center py-5">
           
-          {/* Botão de Play com Aura / Animação */}
-          <div className="relative my-2">
-            <div className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
-              playing 
-                ? isLive 
-                  ? "opacity-60 scale-125 bg-gradient-to-br from-red-600 via-orange-500 to-pink-600 animate-pulse" 
-                  : "opacity-50 scale-115 bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 animate-pulse"
-                : "opacity-15 scale-90 bg-white/20"
-            }`} />
+          {/* Botão de Play com Animação de Onda Real ao Tocar */}
+          <div className="relative my-4 flex items-center justify-center">
+            {playing && (
+              <div 
+                className={`absolute inset-0 rounded-full blur-2xl animate-glow pointer-events-none ${
+                  isLive ? "bg-red-600" : "bg-amber-400"
+                }`} 
+              />
+            )}
+            
+            <button
+              onClick={toggle}
+              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
+                isLive 
+                  ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
+                  : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
+              }`}
+            >
+              {loading ? (
+                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
+              ) : playing ? (
+                <Pause className="size-14 fill-current" strokeWidth={1} />
+              ) : isLive ? (
+                <Radio className="size-14" strokeWidth={1.5} />
+              ) : (
+                <Music className="size-14 ml-1" strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
             
             <button
               onClick={toggle}
