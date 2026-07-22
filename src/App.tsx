@@ -21,7 +21,6 @@ const SHOWS_CONFIG = [
   { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado · 13h00 às 15h00" }
 ];
 
-// CURIOSIDADES, NOTÍCIAS E EFEMÉRIDES DINÂMICAS DO DIA
 const MUSIC_FACTS = [
   "📍 Circuito Interno · Emissão emitida com orgulho a partir de Marco de Canaveses!",
   "🎂 ANIVERSÁRIOS: Parabéns a todos os grandes artistas nascidos neste dia no universo da música.",
@@ -57,7 +56,6 @@ export default function App() {
   const [carMode, setCarMode] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Formulário do Pedido de Música
   const [requestSongName, setRequestSongName] = useState("");
   const [requestArtist, setRequestArtist] = useState("");
   const [requestListenerName, setRequestListenerName] = useState("");
@@ -77,7 +75,7 @@ export default function App() {
           const songArtist = data.now_playing.song.artist || "Circuito Interno";
           
           const mainTitle = isLive ? `Circuito Interno · ${currentShowName}` : "Circuito Interno";
-          const subtitleArtist = isLive ? "Marco de Canaveses" : `${songArtist} - ${songTitle}`;
+          const subtitleArtist = isLive ? "Rádio Circuito Interno" : `${songArtist} - ${songTitle}`;
           const artworkUrl = data.now_playing.song.art || "/logo.png";
 
           const newSong = {
@@ -337,7 +335,7 @@ export default function App() {
             {isLive ? currentShowName : (currentSong?.title || "Música no Ar")}
           </div>
           <div className="text-base text-neutral-400 font-medium">
-            {isLive ? "Marco de Canaveses" : (currentSong?.artist || "Rádio Circuito Interno")}
+            {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
           </div>
         </div>
 
@@ -385,7 +383,6 @@ export default function App() {
           </button>
 
           <div className="flex items-center gap-2">
-            {/* NOVO: Botão Pedir Música */}
             <button 
               onClick={() => setShowSongRequestModal(true)} 
               className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-black transition cursor-pointer font-bold text-[10px] uppercase"
@@ -446,11 +443,7 @@ export default function App() {
             Circuito Interno
           </h1>
 
-          <div className="text-[11px] font-medium text-neutral-400 tracking-wide flex items-center gap-1">
-            <span>Marco de Canaveses</span> · <span className="text-amber-400 font-semibold">Emissão Online 24/7</span>
-          </div>
-
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-0.5 ${
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-1 ${
             isLive 
               ? "border-red-500/40 bg-red-500/15 text-red-400 shadow-red-500/10" 
               : "border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-amber-500/5"
@@ -459,7 +452,7 @@ export default function App() {
               <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/80" : "bg-amber-500/80"} ${playing ? "animate-ping" : ""}`}></span>
               <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
             </span>
-            {isLive ? `Em Direto · ${currentShowName}` : "Sinal Activo"}
+            {isLive ? `Em Direto · ${currentShowName}` : "Emissão Online 24/7"}
           </div>
         </header>
 
@@ -512,7 +505,7 @@ export default function App() {
                 {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
               </div>
               <div className="text-[11px] text-neutral-400 truncate font-medium">
-                {isLive ? "Marco de Canaveses" : (currentSong?.artist || "Rádio Circuito Interno")}
+                {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
               </div>
             </div>
           </div>
@@ -671,7 +664,7 @@ export default function App() {
           
           {/* Rodapé */}
           <div className="mt-6 flex flex-col items-center justify-center gap-1.5 text-[10px] text-neutral-500 font-light tracking-wide">
-            <div className="font-medium text-neutral-400">© Circuito Interno 2026 · Marco de Canaveses</div>
+            <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
             <button 
               onClick={() => setShowPrivacyModal(true)} 
               className="text-neutral-500 hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
