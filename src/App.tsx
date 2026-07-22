@@ -4,7 +4,7 @@ import {
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle, RefreshCw 
 } from "lucide-react";
 
-const APP_BUILD_ID = "v1.0.3";
+const APP_BUILD_ID = "v1.0.2";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
@@ -404,39 +404,40 @@ export default function App() {
         </div>
       )}
 
-      <div className="w-full max-w-md mx-auto flex-1 flex flex-col px-5">
+      {/* CONTAINER PRINCIPAL ADAPTÁVEL (Largo no PC, Estreito no Telemóvel) */}
+      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col px-4 sm:px-8 py-6">
         
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-200 backdrop-blur-md">
+          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-center text-xs text-red-200 backdrop-blur-md">
             {error}
           </div>
         )}
 
         {/* Barra Superior de Ações Rápidas */}
-        <div className="pt-4 flex items-center justify-between text-neutral-400 text-xs font-medium">
+        <div className="flex items-center justify-between text-neutral-400 text-xs font-medium pb-4 border-b border-white/5">
           <button 
             onClick={() => setCarMode(true)} 
-            className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-lg hover:text-white hover:border-amber-500/40 transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg hover:text-white hover:border-amber-500/40 transition cursor-pointer"
             title="Modo Carro"
           >
-            <Car className="size-3.5 text-amber-400" />
-            <span className="text-[10px] font-bold uppercase">Modo Carro</span>
+            <Car className="size-4 text-amber-400" />
+            <span className="text-xs font-bold uppercase">Modo Carro</span>
           </button>
 
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowSongRequestModal(true)} 
-              className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-1.5 rounded-lg hover:bg-amber-500 hover:text-black transition cursor-pointer font-bold text-[10px] uppercase"
+              className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-lg hover:bg-amber-500 hover:text-black transition cursor-pointer font-bold text-xs uppercase"
               title="Pedir Música"
             >
-              <MessageCircle className="size-3.5" />
+              <MessageCircle className="size-4" />
               <span>Pedir Música</span>
             </button>
 
             {history.length > 0 && (
               <button 
                 onClick={() => setShowHistoryModal(true)} 
-                className="p-1.5 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer"
+                className="p-2 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer"
                 title="Músicas Recentes"
               >
                 <History className="size-4 text-amber-400" />
@@ -445,23 +446,23 @@ export default function App() {
 
             <button 
               onClick={() => setShowSleepModal(true)} 
-              className={`flex items-center gap-1 p-1.5 bg-white/5 border rounded-lg transition cursor-pointer ${
+              className={`flex items-center gap-1.5 p-2 bg-white/5 border rounded-lg transition cursor-pointer ${
                 sleepTimer !== null ? "border-amber-500 text-amber-400" : "border-white/10 hover:text-white"
               }`}
               title="Temporizador de Adormecer"
             >
               <Moon className="size-4" />
-              {sleepTimer !== null && <span className="text-[10px] font-mono font-bold">{sleepTimer}m</span>}
+              {sleepTimer !== null && <span className="text-xs font-mono font-bold">{sleepTimer}m</span>}
             </button>
 
             <button 
               onClick={handleShare} 
-              className="p-1.5 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer relative"
+              className="p-2 bg-white/5 border border-white/10 rounded-lg hover:text-white transition cursor-pointer relative"
               title="Partilhar"
             >
               <Share2 className="size-4 text-amber-400" />
               {copied && (
-                <span className="absolute -bottom-7 right-0 bg-amber-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                <span className="absolute -bottom-8 right-0 bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow">
                   Copiado!
                 </span>
               )}
@@ -469,252 +470,263 @@ export default function App() {
           </div>
         </div>
 
-        {/* Topo / Header */}
-        <header className="pt-4 pb-3 text-center shrink-0 flex flex-col items-center gap-2">
-          <div className="relative group cursor-pointer">
-            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
-            <img 
-              src="/logo.png" 
-              alt="Circuito Interno Logo" 
-              className="relative h-14 w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.35)]" 
-            />
-          </div>
-
-          <h1 className="text-3xl font-black tracking-tight text-white mt-1">
-            Circuito Interno
-          </h1>
-
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-1 ${
-            isLive 
-              ? "border-red-500/40 bg-red-500/15 text-red-400 shadow-red-500/10" 
-              : "border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-amber-500/5"
-          }`}>
-            <span className="relative flex size-2">
-              <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/80" : "bg-amber-500/80"} ${playing ? "animate-ping" : ""}`}></span>
-              <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
-            </span>
-            {isLive ? `Em Direto · ${currentShowName}` : "Emissão Online 24/7"}
-          </div>
-        </header>
-
-        {/* Leitor Principal */}
-        <section className="flex-1 flex flex-col items-center justify-center py-4">
+        {/* ESTRUTURA EM 2 COLUNAS NO PC (GRID RESPONSIVO) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start my-auto py-6">
           
-          <div className="relative my-4 flex items-center justify-center">
-            <button
-              onClick={toggle}
-              className={`relative size-40 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
-                playing ? "button-pulsing" : ""
-              } ${
+          {/* PAINEL ESQUERDO: LEITOR E EMISSÃO (Ocupa 7 colunas no PC) */}
+          <div className="lg:col-span-7 flex flex-col items-center justify-center text-center space-y-5 bg-white/[0.01] border border-white/5 p-6 sm:p-8 rounded-3xl shadow-2xl backdrop-blur-md">
+            
+            {/* Header / Logo */}
+            <div className="flex flex-col items-center gap-2">
+              <div className="relative group cursor-pointer">
+                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                <img 
+                  src="/logo.png" 
+                  alt="Circuito Interno Logo" 
+                  className="relative h-16 w-auto object-contain drop-shadow-[0_0_20px_rgba(249,115,22,0.35)]" 
+                />
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white mt-1">
+                Circuito Interno
+              </h1>
+
+              <div className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg mt-1 ${
                 isLive 
-                  ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
-                  : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
-              }`}
-            >
-              {loading ? (
-                <Loader2 className="size-14 animate-spin" strokeWidth={1.5} />
-              ) : playing ? (
-                <Pause className="size-14 fill-current" strokeWidth={1} />
-              ) : isLive ? (
-                <Radio className="size-14" strokeWidth={1.5} />
-              ) : (
-                <Music className="size-14 ml-1" strokeWidth={1.5} />
-              )}
-            </button>
-          </div>
-
-          {/* Cartão "A Tocar Agora" */}
-          <div className="mt-3 w-full max-w-xs bg-white/[0.04] border border-white/10 p-3.5 rounded-2xl flex items-center gap-3.5 shadow-xl backdrop-blur-xl">
-            {currentSong && currentSong.art ? (
-              <img 
-                src={currentSong.art} 
-                alt="Capa" 
-                className="size-12 rounded-xl object-cover shrink-0 shadow-md border border-white/10" 
-              />
-            ) : (
-              <div className="size-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <Music className="size-6" />
-              </div>
-            )}
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-widest text-amber-400">
-                <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
-                {isLive ? "No Ar Agora" : "A Tocar Agora"}
-              </div>
-              <div className="text-xs font-bold text-white truncate mt-0.5">
-                {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
-              </div>
-              <div className="text-[11px] text-neutral-400 truncate font-medium">
-                {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
+                  ? "border-red-500/40 bg-red-500/15 text-red-400 shadow-red-500/10" 
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-amber-500/5"
+              }`}>
+                <span className="relative flex size-2.5">
+                  <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/80" : "bg-amber-500/80"} ${playing ? "animate-ping" : ""}`}></span>
+                  <span className={`relative inline-flex size-2.5 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
+                </span>
+                {isLive ? `Em Direto · ${currentShowName}` : "Emissão Online 24/7"}
               </div>
             </div>
-          </div>
 
-          {/* Ticker Deslizante com Informações de Música e Notícias */}
-          <div className="mt-3.5 w-full max-w-xs overflow-hidden rounded-lg bg-amber-500/[0.03] border border-amber-500/10 py-2 relative shadow-inner">
-            <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-[#080808] to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-[#080808] to-transparent z-10 pointer-events-none" />
-            <div className="animate-ticker text-[10px] uppercase tracking-widest text-amber-400/80 font-bold">
-              <span>{MUSIC_FACTS}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-              <span>{MUSIC_FACTS}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-            </div>
-          </div>
-
-          {/* Controlo de Volume */}
-          <div className="mt-3.5 w-full max-w-xs bg-white/[0.02] border border-white/5 p-3 rounded-xl backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={handleMuteToggle} 
-                className="text-neutral-400 hover:text-white transition cursor-pointer"
-                title={muted ? "Ativar som" : "Desativar som"}
-              >
-                {muted || volume === 0 ? <VolumeX className="size-4 text-red-400" /> : <Volume2 className="size-4" />}
-              </button>
-              <input
-                type="range" 
-                min={0} 
-                max={1} 
-                step={0.01} 
-                value={muted ? 0 : volume}
-                onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                className="flex-1 h-1 rounded-full appearance-none bg-white/10 accent-amber-500 cursor-pointer"
-              />
-              <span className="text-xs tabular-nums text-neutral-400 w-6 text-right font-medium">
-                {Math.round((muted ? 0 : volume) * 100)}%
-              </span>
-            </div>
-          </div>
-
-          {!isLive && (
-            <div className="mt-3.5 w-full max-w-xs bg-amber-500/[0.04] border border-amber-500/15 p-3.5 rounded-xl text-center backdrop-blur-md">
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-400 font-bold tracking-widest uppercase">
-                <Clock className="size-3.5" /> Próximo programa em Direto:
-              </div>
-              <div className="text-base font-mono font-bold text-neutral-100 mt-1 tracking-wider tabular-nums">
-                {countdownText || "A carregar..."}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Canais / Redes */}
-        <section className="py-2 shrink-0">
-          <div className="text-center text-[10px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
-            Canais Oficiais
-          </div>
-          <div className="grid grid-cols-5 gap-2 w-full">
-            <SocialTile href={SOCIALS.website} icon={<Globe className="size-5 text-amber-400" />} />
-            <SocialTile href={SOCIALS.instagram} icon={
-              <svg viewBox="0 0 24 24" className="size-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            } />
-            <SocialTile href={SOCIALS.facebook} icon={
-              <svg viewBox="0 0 24 24" className="size-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-            } />
-            <SocialTile href={SOCIALS.spotify} icon={
-              <svg viewBox="0 0 24 24" className="size-5 text-emerald-400" fill="currentColor">
-                <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
-              </svg>
-            } />
-            <SocialTile href={SOCIALS.youtube} icon={
-              <svg viewBox="0 0 24 24" className="size-5 text-red-600" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
-            } />
-          </div>
-        </section>
-
-        {/* Programação */}
-        <section className="py-2 shrink-0">
-          <div className="text-center text-[10px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
-            Programação em Direto
-          </div>
-          <div className="space-y-2">
-            {SHOWS_CONFIG.map((s) => (
-              <div 
-                key={s.name} 
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 transition duration-300 ${
-                  isLive && currentShowName === s.name
-                    ? "border-red-500/50 bg-red-500/10 shadow-lg shadow-red-500/5"
-                    : "border-white/5 bg-white/[0.02] hover:bg-white/[0.04]"
+            {/* Botão Principal Play */}
+            <div className="relative py-2 flex items-center justify-center">
+              <button
+                onClick={toggle}
+                className={`relative size-44 sm:size-48 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
+                  playing ? "button-pulsing" : ""
+                } ${
+                  isLive 
+                    ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
+                    : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    isLive && currentShowName === s.name ? "bg-red-500 text-white animate-pulse" : "bg-white/5 text-amber-400"
-                  }`}>
-                    <Radio className="size-4" />
+                {loading ? (
+                  <Loader2 className="size-16 animate-spin" strokeWidth={1.5} />
+                ) : playing ? (
+                  <Pause className="size-16 fill-current" strokeWidth={1} />
+                ) : isLive ? (
+                  <Radio className="size-16" strokeWidth={1.5} />
+                ) : (
+                  <Music className="size-16 ml-1" strokeWidth={1.5} />
+                )}
+              </button>
+            </div>
+
+            {/* Cartão "A Tocar Agora" */}
+            <div className="w-full max-w-sm bg-white/[0.04] border border-white/10 p-4 rounded-2xl flex items-center gap-4 shadow-xl backdrop-blur-xl">
+              {currentSong && currentSong.art ? (
+                <img 
+                  src={currentSong.art} 
+                  alt="Capa" 
+                  className="size-14 rounded-xl object-cover shrink-0 shadow-md border border-white/10" 
+                />
+              ) : (
+                <div className="size-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                  <Music className="size-7" />
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1 text-left">
+                <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+                  <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
+                  {isLive ? "No Ar Agora" : "A Tocar Agora"}
+                </div>
+                <div className="text-sm font-bold text-white truncate mt-0.5">
+                  {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
+                </div>
+                <div className="text-xs text-neutral-400 truncate font-medium">
+                  {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
+                </div>
+              </div>
+            </div>
+
+            {/* Ticker Deslizante de Notícias */}
+            <div className="w-full max-w-sm overflow-hidden rounded-xl bg-amber-500/[0.03] border border-amber-500/10 py-2.5 relative shadow-inner">
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#080808] to-transparent z-10 pointer-events-none" />
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#080808] to-transparent z-10 pointer-events-none" />
+              <div className="animate-ticker text-[11px] uppercase tracking-widest text-amber-400/90 font-bold">
+                <span>{MUSIC_FACTS}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
+                <span>{MUSIC_FACTS}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
+              </div>
+            </div>
+
+            {/* Controlo de Volume */}
+            <div className="w-full max-w-sm bg-white/[0.02] border border-white/5 p-3.5 rounded-xl backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handleMuteToggle} 
+                  className="text-neutral-400 hover:text-white transition cursor-pointer"
+                  title={muted ? "Ativar som" : "Desativar som"}
+                >
+                  {muted || volume === 0 ? <VolumeX className="size-5 text-red-400" /> : <Volume2 className="size-5" />}
+                </button>
+                <input
+                  type="range" 
+                  min={0} 
+                  max={1} 
+                  step={0.01} 
+                  value={muted ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="flex-1 h-1.5 rounded-full appearance-none bg-white/10 accent-amber-500 cursor-pointer"
+                />
+                <span className="text-xs tabular-nums text-neutral-400 w-8 text-right font-medium">
+                  {Math.round((muted ? 0 : volume) * 100)}%
+                </span>
+              </div>
+            </div>
+
+            {!isLive && (
+              <div className="w-full max-w-sm bg-amber-500/[0.04] border border-amber-500/15 p-3.5 rounded-xl text-center backdrop-blur-md">
+                <div className="flex items-center justify-center gap-1.5 text-xs text-amber-400 font-bold tracking-widest uppercase">
+                  <Clock className="size-4" /> Próximo programa em Direto:
+                </div>
+                <div className="text-base font-mono font-bold text-neutral-100 mt-1 tracking-wider tabular-nums">
+                  {countdownText || "A carregar..."}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* PAINEL DIREITO: PROGRAMAÇÃO, CANAIS E INFORMAÇÕES (Ocupa 5 colunas no PC) */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Canais Oficiais */}
+            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-2xl">
+              <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-3">
+                Canais Oficiais
+              </div>
+              <div className="grid grid-cols-5 gap-2 w-full">
+                <SocialTile href={SOCIALS.website} icon={<Globe className="size-5 text-amber-400" />} />
+                <SocialTile href={SOCIALS.instagram} icon={
+                  <svg viewBox="0 0 24 24" className="size-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                } />
+                <SocialTile href={SOCIALS.facebook} icon={
+                  <svg viewBox="0 0 24 24" className="size-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                } />
+                <SocialTile href={SOCIALS.spotify} icon={
+                  <svg viewBox="0 0 24 24" className="size-5 text-emerald-400" fill="currentColor">
+                    <path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1 .3c-2.8-1.7-6.3-2.1-10.4-1.2a.75.75 0 1 1-.3-1.4c4.5-1 8.3-.5 11.4 1.3.4.2.5.6.3 1Zm1.5-3.3a.94.94 0 1 1-1.3.3c-3.2-2-8.1-2.5-11.9-1.4a.94.94 0 1 1-.5-1.8c4.3-1.3 9.7-.7 13.4 1.6.5.3.6.9.3 1.3Zm.1-3.4c-3.9-2.3-10.3-2.5-14-1.4a1.12 1.12 0 1 1-.6-2.2c4.3-1.3 11.4-1 15.9 1.6a1.12 1.12 0 1 1-1.2 1.9Z" />
+                  </svg>
+                } />
+                <SocialTile href={SOCIALS.youtube} icon={
+                  <svg viewBox="0 0 24 24" className="size-5 text-red-600" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                } />
+              </div>
+            </div>
+
+            {/* Programação em Direto */}
+            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-2xl">
+              <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-3">
+                Programação em Direto
+              </div>
+              <div className="space-y-2.5">
+                {SHOWS_CONFIG.map((s) => (
+                  <div 
+                    key={s.name} 
+                    className={`flex items-center justify-between rounded-xl border px-4 py-3 transition duration-300 ${
+                      isLive && currentShowName === s.name
+                        ? "border-red-500/50 bg-red-500/10 shadow-lg shadow-red-500/5"
+                        : "border-white/5 bg-white/[0.02] hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        isLive && currentShowName === s.name ? "bg-red-500 text-white animate-pulse" : "bg-white/5 text-amber-400"
+                      }`}>
+                        <Radio className="size-4" />
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <div className="text-xs font-bold text-neutral-100 truncate">{s.name}</div>
+                        <div className="text-[11px] text-neutral-400 truncate mt-0.5">{s.label}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-neutral-100 truncate">{s.name}</div>
-                    <div className="text-[11px] text-neutral-400 truncate mt-0.5">{s.label}</div>
+                ))}
+              </div>
+
+              <div className="mt-4 p-3 rounded-xl border border-amber-500/10 bg-amber-500/[0.02] flex items-center justify-center gap-2.5 text-center">
+                <Mic className="size-4 text-amber-400 shrink-0" />
+                <div className="text-xs text-neutral-300">
+                  <span className="text-neutral-500">Produção e apresentação: </span>
+                  <span className="font-bold text-amber-400">Paulo da Rocha Teixeira</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Parceiros & Apoios */}
+            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-2xl">
+              <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-3">
+                Parceiros & Apoios
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
+                  <div className="flex items-center gap-1.5 text-neutral-400">
+                    <Star className="size-3.5" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
+                  </div>
+                </div>
+                <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
+                  <div className="flex items-center gap-1.5 text-neutral-400">
+                    <Star className="size-3.5" />
+                    <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-3.5 p-3 rounded-xl border border-amber-500/10 bg-amber-500/[0.02] flex items-center justify-center gap-2.5 text-center">
-            <Mic className="size-4 text-amber-400 shrink-0" />
-            <div className="text-xs text-neutral-300">
-              <span className="text-neutral-500">Produção e apresentação: </span>
-              <span className="font-bold text-amber-400">Paulo da Rocha Teixeira</span>
             </div>
-          </div>
-        </section>
 
-        {/* Secção de Patrocinadores */}
-        <section className="py-4 shrink-0">
-          <div className="text-center text-[10px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
-            Parceiros & Apoios
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
-              <div className="flex items-center gap-1.5 text-neutral-400">
-                <Star className="size-3.5" />
-                <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
+            {/* Contactos */}
+            <div className="bg-white/[0.01] border border-white/5 p-5 rounded-2xl">
+              <div className="text-left text-xs uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-3">
+                Contactos do Programa
+              </div>
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5 overflow-hidden text-left">
+                <ContactRow 
+                  icon={<Mail className="size-4 text-amber-400" />} 
+                  label="Email Oficial" 
+                  value="circuitointernoproducoes@gmail.com" 
+                  href="mailto:circuitointernoproducoes@gmail.com" 
+                />
+                <ContactRow 
+                  icon={<Phone className="size-4 text-emerald-400" />} 
+                  label="WhatsApp Directo" 
+                  value="+351 963 350 373" 
+                  href="https://wa.me/351963350373?text=Ol%C3%A1%20Paulo!%20Estou%20a%20ouvir%20o%20Circuito%20Interno." 
+                />
               </div>
             </div>
-            <div className="h-12 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-center grayscale opacity-60 hover:grayscale-0 hover:opacity-100 hover:bg-white/5 transition duration-300 cursor-pointer">
-              <div className="flex items-center gap-1.5 text-neutral-400">
-                <Star className="size-3.5" />
-                <span className="text-xs font-bold uppercase tracking-wide">Espaço Patrocinador</span>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* Contactos */}
-        <section className="pt-2 pb-8 shrink-0">
-          <h2 className="text-[10px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2">
-            Contactos do Programa
-          </h2>
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] divide-y divide-white/5 overflow-hidden">
-            <ContactRow 
-              icon={<Mail className="size-4 text-amber-400" />} 
-              label="Email Oficial" 
-              value="circuitointernoproducoes@gmail.com" 
-              href="mailto:circuitointernoproducoes@gmail.com" 
-            />
-            <ContactRow 
-              icon={<Phone className="size-4 text-emerald-400" />} 
-              label="WhatsApp Directo" 
-              value="+351 963 350 373" 
-              href="https://wa.me/351963350373?text=Ol%C3%A1%20Paulo!%20Estou%20a%20ouvir%20o%20Circuito%20Interno." 
-            />
           </div>
-          
-          {/* Rodapé */}
-          <div className="mt-6 flex flex-col items-center justify-center gap-1.5 text-[10px] text-neutral-500 font-light tracking-wide">
-            <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
-            <button 
-              onClick={() => setShowPrivacyModal(true)} 
-              className="text-neutral-500 hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
-            >
-              Política de Privacidade
-            </button>
-          </div>
-        </section>
+
+        </div>
+
+        {/* Rodapé */}
+        <footer className="pt-4 pb-6 text-center text-xs text-neutral-500 font-light tracking-wide border-t border-white/5 mt-auto">
+          <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
+          <button 
+            onClick={() => setShowPrivacyModal(true)} 
+            className="mt-1 text-neutral-500 hover:text-amber-400 underline underline-offset-2 transition cursor-pointer"
+          >
+            Política de Privacidade
+          </button>
+        </footer>
 
       </div>
 
