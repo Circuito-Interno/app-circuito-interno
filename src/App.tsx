@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { 
   Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
-  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle, AlertCircle
+  Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle
 } from "lucide-react";
 
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
@@ -21,11 +21,11 @@ const SHOWS_CONFIG = [
   { name: "Circuito Interno - Grandes Clássicos", days: [6], startHour: 13, startMin: 0, endHour: 15, endMin: 0, label: "Sábado · 13h00 às 15h00" }
 ];
 
-// FEEDS RSS DE JORNAIS PORTUGUESES E MUSICAIS (JN, PÚBLICO, BLITZ)
+// FEEDS RSS DIREITOS DE JORNAIS PORTUGUESES
 const RSS_FEEDS = [
-  "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.jn.pt%2Frss%2Fultimas%2F",
-  "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.publico.pt%2Fapi%2Ffeed%2Frss%2Fultimas",
-  "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fexpresso.pt%2Fblitz%2Frss"
+  "https://www.jn.pt/rss/ultimas/",
+  "https://www.publico.pt/api/feed/rss/ultimas",
+  "https://expresso.pt/blitz/rss"
 ];
 
 // NOTÍCIA DE ÚLTIMA HORA / DESTAQUE MANUAL (Muda "active: true" para ativar)
@@ -70,7 +70,7 @@ export default function App() {
   // ESTADO DAS NOTÍCIAS
   const [newsText, setNewsText] = useState<string>("A carregar as últimas notícias...");
 
-  // FUNÇÃO PARA BUSCAR NOTÍCIAS AUTOMÁTICAS DAS FONTES RSS
+  // BUSCAR NOTÍCIAS EM TEMPO REAL
   const fetchNews = async () => {
     if (BREAKING_NEWS.active) {
       setNewsText(BREAKING_NEWS.text);
@@ -78,18 +78,28 @@ export default function App() {
     }
 
     try {
-      const feedUrl = RSS_FEEDS[Math.floor(Math.random() * RSS_FEEDS.length)];
-      const res = await fetch(feedUrl);
+      const targetRss = encodeURIComponent(RSS_FEEDS[Math.floor(Math.random() * RSS_FEEDS.length)]);
+      const res = await fetch(`https://api.allorigins.win/get?url=${targetRss}&nocache=${Date.now()}`);
+      
       if (res.ok) {
         const data = await res.json();
-        if (data.items && data.items.length > 0) {
-          const headlines = data.items.slice(0, 8).map((item: any) => item.title.trim()).join("  ✦  ");
-          setNewsText(`📰 ÚLTIMAS NOTÍCIAS: ${headlines}`);
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data.contents, "text/xml");
+        const items = xml.querySelectorAll("item title");
+
+        if (items.length > 0) {
+          const titles: string[] = [];
+          items.forEach((item, index) => {
+            if (index < 8 && item.textContent) {
+              titles.push(item.textContent.trim());
+            }
+          });
+          setNewsText(`📰 ÚLTIMAS NOTÍCIAS: ${titles.join("  ✦  ")}`);
         }
       }
     } catch (e) {
       console.error("Erro ao procurar notícias RSS:", e);
-      setNewsText("📢 CIRCUTO INTERNO: A sua rádio online 24/7 com os melhores clássicos e novidades!");
+      setNewsText("📢 CIRCUITO INTERNO: A sua rádio online 24/7 com a melhor seleção musical!");
     }
   };
 
@@ -225,7 +235,7 @@ export default function App() {
 
     const timer = setInterval(updateStreamStatus, 1000);
     const songTimer = setInterval(fetchNowPlaying, 10000);
-    const newsTimer = setInterval(fetchNews, 3600000); // Atualiza notícias de 60 em 60 minutos (1 hora)
+    const newsTimer = setInterval(fetchNews, 3600000); // Atualiza notícias a cada 1 hora
 
     return () => {
       clearInterval(timer);
@@ -547,7 +557,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* TICKER DE NOTÍCIAS MAIOR E ATUALIZÁVEL */}
+            {/* TICKER DE NOTÍCIAS EM TEMPO REAL */}
             <div className={`w-full overflow-hidden rounded-xl py-3 px-2 relative shadow-inner border transition-colors ${
               BREAKING_NEWS.active 
                 ? "bg-red-950/40 border-red-500/50 text-red-200" 
