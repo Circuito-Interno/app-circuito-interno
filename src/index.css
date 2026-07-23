@@ -1,23 +1,6 @@
-@import "tailwindcss";
-
-@keyframes circularPulse {
-  0% {
-    transform: scale(0.96);
-    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.85);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 28px rgba(249, 115, 22, 0);
-  }
-  100% {
-    transform: scale(0.96);
-    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
-  }
-}
-
-.button-pulsing {
-  animation: circularPulse 1.2s infinite ease-in-out !important;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @keyframes tickerLoop {
   0% {
@@ -28,19 +11,13 @@
   }
 }
 
-/* Animação do Ticker em CSS padrão para evitar erros */
 .animate-ticker {
   display: inline-flex;
   white-space: nowrap;
-  animation: tickerLoop 18s linear infinite; /* Velocidade bem mais rápida */
+  animation: tickerLoop 25s linear infinite;
+  will-change: transform;
 }
 
 .animate-ticker:hover {
   animation-play-state: paused;
-}
-
-.animate-ticker {
-  font-size: 1.15rem; /* Aumenta o tamanho da letra */
-  font-weight: 600;   /* Torna o texto mais legível/encorpado */
-  padding: 6px 0;     /* Dá mais altura à barra */
 }

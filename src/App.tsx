@@ -28,6 +28,12 @@ const RSS_FEEDS = [
   "https://expresso.pt/blitz/rss"
 ];
 
+const DEFAULT_NEWS = [
+  "📰 ÚLTIMAS NOTÍCIAS: Acompanhe a emissão online do Circuito Interno com a melhor seleção musical 24h por dia!",
+  "📰 DESTAQUE: Grande especial de Clássicos do Rock todos os sábados às 13h00.",
+  "📰 MÚSICA: Pede a tua música preferida diretamente através do nosso botão de WhatsApp!"
+];
+
 // NOTÍCIA DE ÚLTIMA HORA / DESTAQUE MANUAL (Muda "active: true" para ativar)
 const BREAKING_NEWS = {
   active: false,
@@ -68,7 +74,7 @@ export default function App() {
   const [currentSong, setCurrentSong] = useState<SongInfo | null>(null);
 
   // ESTADO DAS NOTÍCIAS
-  const [newsText, setNewsText] = useState<string>("A carregar as últimas notícias...");
+  const [newsText, setNewsText] = useState<string>(DEFAULT_NEWS[0]);
 
   // BUSCAR NOTÍCIAS EM TEMPO REAL
   const fetchNews = async () => {
@@ -90,15 +96,19 @@ export default function App() {
         if (items.length > 0) {
           const titles: string[] = [];
           items.forEach((item, index) => {
-            if (index < 5 && item.textContent) {
+            if (index < 3 && item.textContent) {
               titles.push(item.textContent.trim());
             }
           });
-          setNewsText(`📰 ÚLTIMAS NOTÍCIAS: ${titles.join("  ✦  ")}`);
+          if (titles.length > 0) {
+            setNewsText(`📰 ÚLTIMAS NOTÍCIAS: ${titles.join("  ✦  ")}`);
+            return;
+          }
         }
       }
+      // Se falhar, usa uma manchete de reserva fluida
+      setNewsText(DEFAULT_NEWS[Math.floor(Math.random() * DEFAULT_NEWS.length)]);
     } catch (e) {
-      console.error("Erro ao procurar notícias RSS:", e);
       setNewsText("📢 CIRCUITO INTERNO: A sua rádio online 24/7 com a melhor seleção musical!");
     }
   };
@@ -235,7 +245,7 @@ export default function App() {
 
     const timer = setInterval(updateStreamStatus, 1000);
     const songTimer = setInterval(fetchNowPlaying, 10000);
-    const newsTimer = setInterval(fetchNews, 3600000);
+    const newsTimer = setInterval(fetchNews, 1800000); // 30 minutos
 
     return () => {
       clearInterval(timer);
@@ -413,7 +423,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Barra Superior de Ações Rápidas */}
+        {/* Barra Superior */}
         <div className="w-full flex items-center justify-between text-neutral-400 text-xs font-medium pb-2.5 border-b border-white/5 shrink-0">
           <button 
             onClick={() => setCarMode(true)} 
@@ -555,17 +565,15 @@ export default function App() {
               </div>
             </div>
 
-            {/* BARRA DE NOTÍCIAS NATIVA (DESLIZAMENTO SUAVE, SEM ERROS) */}
-            <div className={`w-full overflow-hidden rounded-xl py-3 px-2 relative shadow-inner border transition-colors ${
+            {/* BARRA DE NOTÍCIAS RÁPIDA E LEVE */}
+            <div className={`w-full overflow-hidden rounded-xl py-3 px-2 relative border transition-colors ${
               BREAKING_NEWS.active 
                 ? "bg-red-950/40 border-red-500/50 text-red-200" 
                 : "bg-amber-500/[0.05] border-amber-500/20 text-amber-300"
             }`}>
-              <div className="flex whitespace-nowrap overflow-hidden">
-                <div className="animate-ticker text-xs sm:text-sm uppercase tracking-wider font-extrabold">
-                  <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-                  <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-                </div>
+              <div className="animate-ticker text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
+                <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
               </div>
             </div>
 
