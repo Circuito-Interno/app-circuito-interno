@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @keyframes circularPulse {
   0% {
@@ -30,7 +28,6 @@
   }
 }
 
-/* Animação do Ticker */
 .animate-ticker {
   display: inline-flex;
   white-space: nowrap;
