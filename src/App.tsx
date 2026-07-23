@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import Marquee from "react-fast-marquee";
 import { 
   Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle
@@ -91,7 +90,7 @@ export default function App() {
         if (items.length > 0) {
           const titles: string[] = [];
           items.forEach((item, index) => {
-            if (index < 6 && item.textContent) {
+            if (index < 5 && item.textContent) {
               titles.push(item.textContent.trim());
             }
           });
@@ -414,7 +413,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Barra Superior */}
+        {/* Barra Superior de Ações Rápidas */}
         <div className="w-full flex items-center justify-between text-neutral-400 text-xs font-medium pb-2.5 border-b border-white/5 shrink-0">
           <button 
             onClick={() => setCarMode(true)} 
@@ -556,17 +555,18 @@ export default function App() {
               </div>
             </div>
 
-            {/* MARQUEE DE NOTÍCIAS PROFISSIONAL (SEM ERROS DE TEXTO) */}
-            <div className={`w-full overflow-hidden rounded-xl py-2.5 px-2 relative border transition-colors ${
+            {/* BARRA DE NOTÍCIAS NATIVA (DESLIZAMENTO SUAVE, SEM ERROS) */}
+            <div className={`w-full overflow-hidden rounded-xl py-3 px-2 relative shadow-inner border transition-colors ${
               BREAKING_NEWS.active 
                 ? "bg-red-950/40 border-red-500/50 text-red-200" 
                 : "bg-amber-500/[0.05] border-amber-500/20 text-amber-300"
             }`}>
-              <Marquee gradient={false} speed={60} pauseOnHover={true}>
-                <span className="text-xs sm:text-sm uppercase tracking-wider font-extrabold pr-8">
-                  {newsText}
-                </span>
-              </Marquee>
+              <div className="flex whitespace-nowrap overflow-hidden">
+                <div className="animate-ticker text-xs sm:text-sm uppercase tracking-wider font-extrabold">
+                  <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
+                  <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
+                </div>
+              </div>
             </div>
 
             {/* Controlo de Volume */}
@@ -728,7 +728,7 @@ export default function App() {
 
       </div>
 
-      {/* MODAL: Pedir Música */}
+      {/* MODAIS */}
       {showSongRequestModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl">
@@ -787,7 +787,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: Sleep Timer */}
       {showSleepModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl text-center">
@@ -821,7 +820,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: Músicas Recentes */}
       {showHistoryModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-xs w-full p-5 text-neutral-300 relative shadow-2xl">
@@ -852,7 +850,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: Privacidade */}
       {showPrivacyModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#121212] border border-white/10 rounded-2xl max-w-sm w-full p-5 text-neutral-300 relative shadow-2xl">
