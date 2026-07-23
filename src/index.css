@@ -32,7 +32,7 @@
 .animate-ticker {
   display: inline-flex;
   white-space: nowrap;
-  animation: tickerLoop 120s linear infinite;
+  animation: tickerLoop 40s linear infinite;
 }
 
 .animate-ticker:hover {
