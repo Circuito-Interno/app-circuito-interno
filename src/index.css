@@ -2,7 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes ticker {
+@keyframes circularPulse {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.85);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 28px rgba(249, 115, 22, 0);
+  }
+  100% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.button-pulsing {
+  animation: circularPulse 1.2s infinite ease-in-out !important;
+}
+
+@keyframes tickerLoop {
   0% {
     transform: translateX(0%);
   }
@@ -11,10 +30,12 @@
   }
 }
 
+/* Animação do Ticker */
 .animate-ticker {
   display: inline-flex;
   white-space: nowrap;
-  animation: ticker 35s linear infinite;
+  animation: tickerLoop 35s linear infinite;
+  will-change: transform;
 }
 
 .animate-ticker:hover {
