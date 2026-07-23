@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Marquee from "react-fast-marquee";
 import { 
   Pause, Volume2, VolumeX, Mail, Phone, Radio, Loader2, Clock, Music, 
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle
@@ -90,7 +91,7 @@ export default function App() {
         if (items.length > 0) {
           const titles: string[] = [];
           items.forEach((item, index) => {
-            if (index < 5 && item.textContent) {
+            if (index < 6 && item.textContent) {
               titles.push(item.textContent.trim());
             }
           });
@@ -405,7 +406,6 @@ export default function App() {
   return (
     <div className="min-h-screen lg:h-screen bg-[#080808] text-neutral-100 flex flex-col antialiased selection:bg-amber-500 selection:text-black w-full overflow-x-hidden lg:overflow-hidden">
       
-      {/* CONTAINER "SINGLE SCREEN" NO PC */}
       <div className="w-full max-w-[1700px] mx-auto flex-1 flex flex-col px-4 sm:px-6 lg:px-8 py-3 lg:py-4 justify-between">
         
         {error && (
@@ -414,7 +414,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Barra Superior de Ações Rápidas */}
+        {/* Barra Superior */}
         <div className="w-full flex items-center justify-between text-neutral-400 text-xs font-medium pb-2.5 border-b border-white/5 shrink-0">
           <button 
             onClick={() => setCarMode(true)} 
@@ -471,13 +471,12 @@ export default function App() {
           </div>
         </div>
 
-        {/* GRELHA COMPACTA DE 2 COLUNAS */}
+        {/* GRELHA */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-center flex-1 my-auto py-2">
           
-          {/* PAINEL ESQUERDO: LEITOR E CONTROLOS */}
+          {/* PAINEL ESQUERDO */}
           <div className="lg:col-span-6 flex flex-col items-center justify-center text-center space-y-3.5 bg-white/[0.01] border border-white/5 p-4 sm:p-6 lg:p-8 rounded-3xl shadow-2xl backdrop-blur-md w-full h-full justify-between">
             
-            {/* Header / Logo */}
             <div className="flex flex-col items-center gap-1.5">
               <div className="relative group cursor-pointer">
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
@@ -505,7 +504,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Botão Principal Play */}
+            {/* Play Button */}
             <div className="relative py-1 flex items-center justify-center">
               <button
                 onClick={toggle}
@@ -529,7 +528,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Cartão "A Tocar Agora" */}
+            {/* Now Playing Card */}
             <div className="w-full bg-white/[0.04] border border-white/10 p-3 sm:p-4 rounded-2xl flex items-center gap-3.5 shadow-xl backdrop-blur-xl">
               {currentSong && currentSong.art ? (
                 <img 
@@ -557,18 +556,17 @@ export default function App() {
               </div>
             </div>
 
-            {/* TICKER DE NOTÍCIAS EM TEMPO REAL */}
-            <div className={`w-full overflow-hidden rounded-xl py-3 px-2 relative shadow-inner border transition-colors ${
+            {/* MARQUEE DE NOTÍCIAS PROFISSIONAL (SEM ERROS DE TEXTO) */}
+            <div className={`w-full overflow-hidden rounded-xl py-2.5 px-2 relative border transition-colors ${
               BREAKING_NEWS.active 
                 ? "bg-red-950/40 border-red-500/50 text-red-200" 
                 : "bg-amber-500/[0.05] border-amber-500/20 text-amber-300"
             }`}>
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#080808] to-transparent z-10 pointer-events-none" />
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#080808] to-transparent z-10 pointer-events-none" />
-              <div className="animate-ticker text-xs sm:text-sm uppercase tracking-wider font-extrabold">
-                <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-                <span>{newsText}&nbsp;&nbsp;✦&nbsp;&nbsp;</span>
-              </div>
+              <Marquee gradient={false} speed={60} pauseOnHover={true}>
+                <span className="text-xs sm:text-sm uppercase tracking-wider font-extrabold pr-8">
+                  {newsText}
+                </span>
+              </Marquee>
             </div>
 
             {/* Controlo de Volume */}
@@ -608,10 +606,9 @@ export default function App() {
             )}
           </div>
 
-          {/* PAINEL DIREITO: INFORMAÇÕES E PROGRAMAÇÃO */}
+          {/* PAINEL DIREITO */}
           <div className="lg:col-span-6 flex flex-col justify-between space-y-3.5 w-full h-full">
             
-            {/* Canais Oficiais */}
             <div className="bg-white/[0.01] border border-white/5 p-4 sm:p-5 rounded-2xl w-full">
               <div className="text-left text-[11px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
                 Canais Oficiais
@@ -637,7 +634,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Programação em Direto */}
             <div className="bg-white/[0.01] border border-white/5 p-4 sm:p-5 rounded-2xl w-full">
               <div className="text-left text-[11px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
                 Programação em Direto
@@ -676,7 +672,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Parceiros & Apoios */}
             <div className="bg-white/[0.01] border border-white/5 p-4 sm:p-5 rounded-2xl w-full">
               <div className="text-left text-[11px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
                 Parceiros & Apoios
@@ -697,7 +692,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Contactos */}
             <div className="bg-white/[0.01] border border-white/5 p-4 sm:p-5 rounded-2xl w-full">
               <div className="text-left text-[11px] uppercase font-extrabold tracking-[0.2em] text-neutral-500 mb-2.5">
                 Contactos do Programa
@@ -722,7 +716,6 @@ export default function App() {
 
         </div>
 
-        {/* Rodapé */}
         <footer className="pt-3 pb-2 text-center text-xs text-neutral-500 font-light tracking-wide border-t border-white/5 shrink-0">
           <div className="font-medium text-neutral-400">© Circuito Interno 2026</div>
           <button 
