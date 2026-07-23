@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes tickerLoop {
+@keyframes ticker {
   0% {
     transform: translateX(0%);
   }
@@ -14,8 +14,7 @@
 .animate-ticker {
   display: inline-flex;
   white-space: nowrap;
-  animation: tickerLoop 30s linear infinite;
-  will-change: transform;
+  animation: ticker 35s linear infinite;
 }
 
 .animate-ticker:hover {
