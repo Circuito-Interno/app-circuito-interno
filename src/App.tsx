@@ -4,7 +4,9 @@ import {
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle
 } from "lucide-react";
 
+// ENDEREÇOS OFICIAIS DOS STREAMS DE ÁUDIO
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
+const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
 const SOCIALS = {
@@ -28,7 +30,7 @@ const RSS_FEEDS = [
   "https://expresso.pt/blitz/rss"
 ];
 
-// NOTÍCIA DE ÚLTIMA HORA / DESTAQUE MANUAL (Muda "active: true" para ativar)
+// NOTÍCIA DE ÚLTIMA HORA / DESTAQUE MANUAL
 const BREAKING_NEWS = {
   active: false,
   text: "🚨 ÚLTIMA HORA: Homenagem especial a Luís Represas hoje na emissão do Circuito Interno."
@@ -47,6 +49,9 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // FONTE DE ÁUDIO ATIVA: 'circuito' | 'marcoense' | 'local'
+  const [audioSource, setAudioSource] = useState<'circuito' | 'marcoense' | 'local'>('circuito');
 
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showSleepModal, setShowSleepModal] = useState(false);
@@ -90,7 +95,7 @@ export default function App() {
         if (items.length > 0) {
           const titles: string[] = [];
           items.forEach((item, index) => {
-            if (index < 6 && item.textContent) {
+            if (index < 8 && item.textContent) {
               titles.push(item.textContent.trim());
             }
           });
@@ -105,15 +110,12 @@ export default function App() {
 
   const fetchNowPlaying = async () => {
     try {
-      const res = await fetch(API_NOWPLAYING);
+      const res = await fetch(API_NOWPLAYING + "?nocache=" + Date.now());
       if (res.ok) {
         const data = await res.json();
         if (data && data.now_playing && data.now_playing.song) {
           const songTitle = data.now_playing.song.title || "Música no Ar";
           const songArtist = data.now_playing.song.artist || "Circuito Interno";
-          
-          const mainTitle = isLive ? `Circuito Interno · ${currentShowName}` : "Circuito Interno";
-          const subtitleArtist = isLive ? "Rádio Circuito Interno" : `${songArtist} - ${songTitle}`;
           const artworkUrl = data.now_playing.song.art || "/logo.png";
 
           const newSong = {
@@ -131,9 +133,9 @@ export default function App() {
 
           if ("mediaSession" in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
-              title: mainTitle,
-              artist: subtitleArtist,
-              album: "Emissão 24/7",
+              title: songTitle,
+              artist: songArtist,
+              album: "Circuito Interno 24/7",
               artwork: [{ src: artworkUrl, sizes: "512x512", type: "image/png" }]
             });
           }
@@ -220,7 +222,6 @@ export default function App() {
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
-      setError("A carregar o sinal da emissão...");
     };
 
     a.addEventListener("playing", handlePlaying);
@@ -235,7 +236,7 @@ export default function App() {
 
     const timer = setInterval(updateStreamStatus, 1000);
     const songTimer = setInterval(fetchNowPlaying, 10000);
-    const newsTimer = setInterval(fetchNews, 3600000); // Atualiza notícias a cada 1 hora
+    const newsTimer = setInterval(fetchNews, 3600000);
 
     return () => {
       clearInterval(timer);
@@ -299,29 +300,55 @@ export default function App() {
     }
   };
 
-  const toggle = async () => {
+  // CONTROLADOR DE REPRODUÇÃO MULTI-FONTE ROBUSTO
+  const toggle = async (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
     const a = audioRef.current;
     if (!a) return;
 
-    if (playing) {
+    const sourceToPlay = selectedSource || audioSource;
+
+    // Se já estiver a tocar a mesma fonte e clicar no play, desliga
+    if (playing && !selectedSource) {
       a.pause();
-      a.src = ""; 
+      a.src = "";
       setPlaying(false);
+      setLoading(false);
       return;
     }
 
     try {
       setError(null);
       setLoading(true);
-      a.src = STREAM_URL + "?nocache=" + new Date().getTime();
+      setAudioSource(sourceToPlay);
+
+      // Limpeza completa do estado do leitor
+      a.pause();
+      a.src = "";
+      a.load();
+
+      let targetUrl = STREAM_URL + "?nocache=" + Date.now();
+
+      if (sourceToPlay === 'marcoense') {
+        targetUrl = RADIO_MARCOENSE_STREAM;
+      } else if (sourceToPlay === 'local') {
+        targetUrl = "/musica.mp3";
+      }
+
+      a.src = targetUrl;
       a.volume = muted ? 0 : volume;
       a.muted = muted;
+      
       await a.play();
-      fetchNowPlaying();
+      setPlaying(true);
+      if (sourceToPlay === 'circuito') fetchNowPlaying();
     } catch (e) {
-      console.error(e);
-      setError("Erro ao iniciar o sinal da rádio.");
+      console.error("Erro ao iniciar reprodução:", e);
       setPlaying(false);
+      if (sourceToPlay === 'marcoense') {
+        setError("O stream direto da Rádio Marcoense está momentaneamente indisponível.");
+      } else {
+        setError("Erro ao conectar à transmissão. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -373,17 +400,17 @@ export default function App() {
         <div className="text-center space-y-3 my-auto">
           <div className="text-2xl font-black text-amber-400">Circuito Interno</div>
           <div className="text-xl font-bold text-white truncate max-w-xs mx-auto">
-            {isLive ? currentShowName : (currentSong?.title || "Música no Ar")}
+            {audioSource === 'marcoense' ? "Rádio Marcoense (Em Direto)" : isLive ? currentShowName : (currentSong?.title || "Música no Ar")}
           </div>
           <div className="text-base text-neutral-400 font-medium">
-            {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
+            {audioSource === 'marcoense' ? "Sinal 93.3 FM" : isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
           </div>
         </div>
 
         <button
-          onClick={toggle}
+          onClick={() => toggle()}
           className={`w-full py-12 rounded-3xl font-black text-2xl flex items-center justify-center gap-4 transition active:scale-95 shadow-2xl cursor-pointer ${
-            isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
+            audioSource === 'marcoense' || isLive ? "bg-red-600 text-white" : "bg-amber-500 text-black"
           }`}
         >
           {loading ? (
@@ -492,27 +519,39 @@ export default function App() {
                 Circuito Interno
               </h1>
 
-              <div className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 shadow-lg ${
-                isLive 
-                  ? "border-red-500/40 bg-red-500/15 text-red-400" 
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-400"
-              }`}>
-                <span className="relative flex size-2">
-                  <span className={`absolute inline-flex h-full w-full rounded-full ${isLive ? "bg-red-500/80" : "bg-amber-500/80"} ${playing ? "animate-ping" : ""}`}></span>
-                  <span className={`relative inline-flex size-2 rounded-full ${isLive ? "bg-red-500" : "bg-amber-500"}`}></span>
-                </span>
-                {isLive ? `Em Direto · ${currentShowName}` : "Emissão Online 24/7"}
+              {/* Botões de Seleção de Emissão */}
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={() => toggle('circuito')}
+                  className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition ${
+                    audioSource === 'circuito' 
+                      ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" 
+                      : "bg-white/5 text-neutral-400 border border-white/10 hover:text-white"
+                  }`}
+                >
+                  Rádio 24/7
+                </button>
+                <button
+                  onClick={() => toggle('marcoense')}
+                  className={`px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition ${
+                    audioSource === 'marcoense' 
+                      ? "bg-red-600 text-white shadow-lg shadow-red-600/30" 
+                      : "bg-white/5 text-neutral-400 border border-white/10 hover:text-white"
+                  }`}
+                >
+                  📻 Direto Rádio Marcoense
+                </button>
               </div>
             </div>
 
             {/* Botão Principal Play */}
             <div className="relative py-1 flex items-center justify-center">
               <button
-                onClick={toggle}
+                onClick={() => toggle()}
                 className={`relative size-36 sm:size-44 lg:size-48 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 active:scale-95 hover:scale-[1.02] cursor-pointer border border-white/10 z-10 ${
                   playing ? "button-pulsing" : ""
                 } ${
-                  isLive 
+                  audioSource === 'marcoense' || isLive 
                     ? "bg-gradient-to-br from-red-500 to-red-700 text-white shadow-red-900/40" 
                     : "bg-gradient-to-br from-amber-400 to-amber-500 text-black shadow-amber-500/20"
                 }`}
@@ -521,7 +560,7 @@ export default function App() {
                   <Loader2 className="size-14 sm:size-18 animate-spin" strokeWidth={1.5} />
                 ) : playing ? (
                   <Pause className="size-14 sm:size-18 fill-current" strokeWidth={1} />
-                ) : isLive ? (
+                ) : audioSource === 'marcoense' || isLive ? (
                   <Radio className="size-14 sm:size-18" strokeWidth={1.5} />
                 ) : (
                   <Music className="size-14 sm:size-18 ml-1" strokeWidth={1.5} />
@@ -531,7 +570,7 @@ export default function App() {
 
             {/* Cartão "A Tocar Agora" */}
             <div className="w-full bg-white/[0.04] border border-white/10 p-3 sm:p-4 rounded-2xl flex items-center gap-3.5 shadow-xl backdrop-blur-xl">
-              {currentSong && currentSong.art ? (
+              {currentSong && currentSong.art && audioSource === 'circuito' ? (
                 <img 
                   src={currentSong.art} 
                   alt="Capa" 
@@ -539,20 +578,20 @@ export default function App() {
                 />
               ) : (
                 <div className="size-12 sm:size-14 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                  <Music className="size-7" />
+                  <Radio className="size-7" />
                 </div>
               )}
 
               <div className="min-w-0 flex-1 text-left">
                 <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
                   <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
-                  {isLive ? "No Ar Agora" : "A Tocar Agora"}
+                  {audioSource === 'marcoense' ? "Transmissão Externa" : isLive ? "No Ar Agora" : "A Tocar Agora"}
                 </div>
                 <div className="text-xs sm:text-base font-bold text-white truncate mt-0.5">
-                  {isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
+                  {audioSource === 'marcoense' ? "Rádio Marcoense (Em Direto)" : isLive ? currentShowName : (currentSong?.title || "Circuito Interno")}
                 </div>
                 <div className="text-[11px] sm:text-xs text-neutral-400 truncate font-medium">
-                  {isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
+                  {audioSource === 'marcoense' ? "Sinal 93.3 FM" : isLive ? "Rádio Circuito Interno" : (currentSong?.artist || "Rádio Circuito Interno")}
                 </div>
               </div>
             </div>
