@@ -42,28 +42,46 @@ const SCHEDULE: ScheduleItem[] = [
     title: 'Circuito Interno - Romântico',
     day: 'Terça a Quinta',
     time: '22h00 às 24h00',
-    description: 'As melhores baladas e músicas românticas para embalar a sua noite.',
+    description:
+      'As melhores baladas e músicas românticas para embalar a sua noite.',
   },
   {
     id: '2',
     title: 'Circuito Interno - Rock & Indie Alternativo',
     day: 'Sexta',
     time: '22h00 às 24h00',
-    description: 'Uma seleção com o melhor do Rock clássico, Indie e música alternativa.',
+    description:
+      'Uma seleção com o melhor do Rock clássico, Indie e música alternativa.',
   },
   {
     id: '3',
     title: 'Circuito Interno - Grandes Clássicos',
     day: 'Sábado',
     time: '13h00 às 15h00',
-    description: 'Os intemporais que marcaram gerações e fizeram história na música.',
+    description:
+      'Os intemporais que marcaram gerações e fizeram história na música.',
   },
 ];
 
 const SPECIAL_SHOWS = [
-  { name: 'Circuito Interno – Romântico', days: [2, 3, 4], startHour: 22, endHour: 24 },
-  { name: 'Circuito Interno – Rock & Indie Alternativo', days: [5], startHour: 22, endHour: 24 },
-  { name: 'Circuito Interno – Grandes Clássicos', days: [6], startHour: 13, endHour: 15 },
+  {
+    name: 'Circuito Interno – Romântico',
+    days: [2, 3, 4],
+    startHour: 22,
+    endHour: 24,
+  },
+  {
+    name: 'Circuito Interno – Rock & Indie Alternativo',
+    days: [5],
+    startHour: 22,
+    endHour: 24,
+  },
+  {
+    name: 'Circuito Interno – Grandes Clássicos',
+    days: [6],
+    startHour: 13,
+    endHour: 15,
+  },
 ];
 
 /* =========================================================
@@ -71,11 +89,26 @@ const SPECIAL_SHOWS = [
    ========================================================= */
 
 const RSS_FEEDS = [
-  { name: 'Jornal de Notícias', url: 'https://www.jn.pt/rss/ultima-hora.xml' },
-  { name: 'Diário de Notícias', url: 'https://www.dn.pt/rss/ultima-hora.xml' },
-  { name: 'Público', url: 'https://feeds.feedburner.com/PublicoRSS' },
-  { name: 'TSF Últimas', url: 'https://www.tsf.pt/rss/ultima-hora.xml' },
-  { name: 'Rádio Renascença', url: 'https://rr.sapo.pt/rss/rssultima.xml' },
+  {
+    name: 'Jornal de Notícias',
+    url: 'https://www.jn.pt/rss/ultima-hora.xml',
+  },
+  {
+    name: 'Diário de Notícias',
+    url: 'https://www.dn.pt/rss/ultima-hora.xml',
+  },
+  {
+    name: 'Público',
+    url: 'https://feeds.feedburner.com/PublicoRSS',
+  },
+  {
+    name: 'TSF Últimas',
+    url: 'https://www.tsf.pt/rss/ultima-hora.xml',
+  },
+  {
+    name: 'Rádio Renascença',
+    url: 'https://rr.sapo.pt/rss/rssultima.xml',
+  },
 ];
 
 /* =========================================================
@@ -89,69 +122,99 @@ export default function App() {
   const [volume, setVolume] = useState(0.8);
   const [muted, setMuted] = useState(false);
 
-  const [audioSource, setAudioSource] = useState<AudioSource>('circuito');
-  const [currentSong, setCurrentSong] = useState('Rádio Circuito Interno');
+  const [audioSource, setAudioSource] =
+    useState<AudioSource>('circuito');
 
-  const [error, setError] = useState<string | null>(null);
+  const [currentSong, setCurrentSong] = useState(
+    'Rádio Circuito Interno'
+  );
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   const [carMode, setCarMode] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
 
   const [news, setNews] = useState<string[]>([]);
-  const [nextShowText, setNextShowText] = useState('');
+  const [nextShowText, setNextShowText] =
+    useState('');
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef =
+    useRef<HTMLAudioElement | null>(null);
 
   /* =========================================================
-     METADADOS VIA JSON FALLBACK / API
+     METADADOS E SUPORTE PARA ECRÃ DE BLOQUEIO (MEDIA SESSION)
      ========================================================= */
+
+  const updateMediaSession = (titleName: string) => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title:
+          audioSource === 'marcoense'
+            ? 'Rádio Marcoense (93.3 FM)'
+            : titleName,
+        artist: 'Rádio Circuito Interno',
+        album: 'Emissão Online',
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        audioRef.current?.play();
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        stopAudio();
+      });
+    }
+  };
 
   const fetchNowPlaying = async () => {
     try {
-      const res = await fetch(
-        'https://api.allorigins.win/raw?url=' +
-          encodeURIComponent('https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv'),
-        { cache: 'no-store' }
-      );
-      if (res.ok) {
-        const text = await res.text();
-        const match = text.match(/"streamTitle"\s*:\s*"([^"]+)"/);
-        if (match?.[1]) {
-          setCurrentSong(match[1]);
-          updateMediaSession(match[1]);
+      const response = await fetch(
+        'https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv',
+        {
+          cache: 'no-store',
         }
+      );
+
+      if (!response.ok) return;
+
+      const reader = response.body?.getReader();
+      if (!reader) return;
+
+      const { value } = await reader.read();
+      if (!value) return;
+
+      const text = new TextDecoder().decode(value);
+      if (!text) return;
+
+      try {
+        const data = JSON.parse(text);
+        if (data.streamTitle) {
+          setCurrentSong(data.streamTitle);
+          updateMediaSession(data.streamTitle);
+          return;
+        }
+      } catch {
+        /* Continua para a regex se JSON falhar */
       }
-    } catch (e) {
-      console.log('Erro ao carregar metadados:', e);
+
+      const match = text.match(/"streamTitle"\s*:\s*"([^"]+)"/);
+      if (match?.[1]) {
+        setCurrentSong(match[1]);
+        updateMediaSession(match[1]);
+      }
+    } catch (err) {
+      console.log('Erro nos metadados:', err);
     }
   };
 
   useEffect(() => {
     fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 12000);
+
+    const interval = setInterval(fetchNowPlaying, 10000);
+
     return () => clearInterval(interval);
-  }, []);
-
-  /* =========================================================
-     MEDIA SESSION API (ECRÃ DE BLOQUEIO DO IOS/ANDROID)
-     ========================================================= */
-
-  const updateMediaSession = (title: string) => {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: audioSource === 'marcoense' ? 'Rádio Marcoense (93.3 FM)' : title,
-        artist: 'Rádio Circuito Interno',
-        album: 'Emissão Online Live',
-        artwork: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-        ],
-      });
-
-      navigator.mediaSession.setActionHandler('play', () => toggle());
-      navigator.mediaSession.setActionHandler('pause', () => stopAudio());
-    }
-  };
+  }, [audioSource]);
 
   /* =========================================================
      COUNTDOWN
@@ -164,23 +227,32 @@ export default function App() {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+      const currentTimeInMinutes =
+        currentHour * 60 + currentMinute;
+
       let bestDiff = Infinity;
 
       for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
         const targetDay = (currentDay + dayOffset) % 7;
 
         for (const show of SPECIAL_SHOWS) {
-          if (!show.days.includes(targetDay)) continue;
+          if (!show.days.includes(targetDay)) {
+            continue;
+          }
 
           const startMinutes = show.startHour * 60;
           let diffMinutes: number;
 
           if (dayOffset === 0) {
             diffMinutes = startMinutes - currentTimeInMinutes;
-            if (diffMinutes < 0) continue;
+            if (diffMinutes < 0) {
+              continue;
+            }
           } else {
-            diffMinutes = dayOffset * 24 * 60 + startMinutes - currentTimeInMinutes;
+            diffMinutes =
+              dayOffset * 24 * 60 +
+              startMinutes -
+              currentTimeInMinutes;
           }
 
           if (diffMinutes < bestDiff) {
@@ -193,12 +265,16 @@ export default function App() {
         const hours = Math.floor(bestDiff / 60);
         const minutes = bestDiff % 60;
 
-        setNextShowText(`${hours}h : ${minutes < 10 ? '0' : ''}${minutes}m`);
+        setNextShowText(
+          `${hours}h : ${minutes < 10 ? '0' : ''}${minutes}m`
+        );
       }
     };
 
     updateCountdown();
+
     const interval = setInterval(updateCountdown, 60000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -231,7 +307,7 @@ export default function App() {
               allTitles = [...allTitles, ...titles];
             }
           } catch {
-            /* Continua em caso de falha individual */
+            /* Se uma fonte falhar, continua */
           }
         }
 
@@ -244,7 +320,9 @@ export default function App() {
     };
 
     fetchNews();
+
     const interval = setInterval(fetchNews, 300000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -274,7 +352,11 @@ export default function App() {
 
     const targetSource = selectedSource || audioSource;
 
-    if (playing && selectedSource && selectedSource === audioSource) {
+    if (
+      playing &&
+      selectedSource &&
+      selectedSource === audioSource
+    ) {
       stopAudio();
       return;
     }
@@ -310,7 +392,12 @@ export default function App() {
 
       setPlaying(true);
       setLoading(false);
-      updateMediaSession(currentSong);
+
+      if (targetSource === 'circuito') {
+        fetchNowPlaying();
+      } else {
+        updateMediaSession('Rádio Marcoense (93.3 FM)');
+      }
     } catch (err) {
       console.error('Erro ao iniciar reprodução:', err);
 
@@ -318,9 +405,13 @@ export default function App() {
       setLoading(false);
 
       if (targetSource === 'marcoense') {
-        setError('Não foi possível iniciar a emissão da Rádio Marcoense.');
+        setError(
+          'Não foi possível iniciar a emissão da Rádio Marcoense.'
+        );
       } else {
-        setError('Não foi possível iniciar a emissão da Rádio Circuito Interno.');
+        setError(
+          'Não foi possível iniciar a emissão da Rádio Circuito Interno.'
+        );
       }
     }
   };
@@ -355,6 +446,7 @@ export default function App() {
     const handleError = () => {
       setLoading(false);
       setPlaying(false);
+
       console.error('Elemento audio encontrou um erro.');
     };
 
@@ -377,7 +469,9 @@ export default function App() {
      VOLUME & MUTE
      ========================================================= */
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVolumeChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const value = parseFloat(e.target.value);
     setVolume(value);
 
@@ -421,7 +515,9 @@ export default function App() {
   return (
     <div
       className={`min-h-screen ${
-        darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-100 text-zinc-900'
+        darkMode
+          ? 'bg-zinc-950 text-zinc-100'
+          : 'bg-zinc-100 text-zinc-900'
       } transition-colors duration-300 font-sans pb-12`}
     >
       {/* HEADER */}
@@ -458,7 +554,11 @@ export default function App() {
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors"
             >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {darkMode ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
             </button>
           </div>
         </div>
@@ -524,15 +624,21 @@ export default function App() {
 
             {/* INFORMAÇÃO DA EMISSÃO */}
             <div>
-              <h2 className="text-xl font-bold tracking-tight">{playerTitle}</h2>
-              <p className="text-sm text-zinc-400 mt-1">{playerSubtitle}</p>
+              <h2 className="text-xl font-bold tracking-tight">
+                {playerTitle}
+              </h2>
+              <p className="text-sm text-zinc-400 mt-1">
+                {playerSubtitle}
+              </p>
             </div>
 
             {/* PLAY / PAUSE */}
             <button
               onClick={() => toggle()}
               disabled={loading}
-              aria-label={playing ? 'Pausar rádio' : 'Reproduzir rádio'}
+              aria-label={
+                playing ? 'Pausar rádio' : 'Reproduzir rádio'
+              }
               className={`rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white flex items-center justify-center transition-all shadow-xl shadow-orange-600/30 active:scale-95 ${
                 carMode ? 'w-28 h-28' : 'w-20 h-20'
               }`}
@@ -540,9 +646,15 @@ export default function App() {
               {loading ? (
                 <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
               ) : playing ? (
-                <Pause className={carMode ? 'w-12 h-12' : 'w-8 h-8'} />
+                <Pause
+                  className={carMode ? 'w-12 h-12' : 'w-8 h-8'}
+                />
               ) : (
-                <Play className={carMode ? 'w-12 h-12 ml-1' : 'w-8 h-8 ml-1'} />
+                <Play
+                  className={
+                    carMode ? 'w-12 h-12 ml-1' : 'w-8 h-8 ml-1'
+                  }
+                />
               )}
             </button>
 
@@ -584,7 +696,9 @@ export default function App() {
               </span>
 
               <div className="whitespace-nowrap overflow-hidden text-sm text-zinc-300">
-                <div className="inline-block animate-marquee">{news.join('  •  ')}</div>
+                <div className="inline-block animate-marquee">
+                  {news.join('  •  ')}
+                </div>
               </div>
             </div>
           </div>
@@ -616,9 +730,13 @@ export default function App() {
                   {item.day} • {item.time}
                 </span>
 
-                <h4 className="font-bold text-sm mb-1">{item.title}</h4>
+                <h4 className="font-bold text-sm mb-1">
+                  {item.title}
+                </h4>
 
-                <p className="text-xs text-zinc-400 leading-relaxed">{item.description}</p>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
