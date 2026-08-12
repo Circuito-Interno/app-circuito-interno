@@ -4,9 +4,9 @@ import {
   Globe, ShieldCheck, X, Mic, Send, Moon, Share2, Car, History, Star, MessageCircle
 } from "lucide-react";
 
-// ENDEREÇOS OFICIAIS DOS STREAMS DE ÁUDIO
+// ENDEREÇOS OFICIAIS DOS STREAMS DE ÁUDIO (COMPATÍVEIS COM iOS / ANDROID / WEB)
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
-const RADIO_MARCOENSE_STREAM = "https://stream.emissora.pt/radiomarcoense";
+const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
 const SOCIALS = {
@@ -270,7 +270,8 @@ export default function App() {
         clearInterval(interval);
         if (audioRef.current) {
           audioRef.current.pause();
-          audioRef.current.src = "";
+          audioRef.current.removeAttribute('src');
+          audioRef.current.load();
         }
         setPlaying(false);
         setSleepTimer(null);
@@ -300,17 +301,17 @@ export default function App() {
     }
   };
 
-  // CONTROLADOR DE REPRODUÇÃO MULTI-FONTE ROBUSTO
+  // CONTROLADOR DE REPRODUÇÃO MULTI-FONTE UNIVERSAL (iOS / ANDROID / WEB)
   const toggle = async (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
     const a = audioRef.current;
     if (!a) return;
 
     const sourceToPlay = selectedSource || audioSource;
 
-    // Se já estiver a tocar a mesma fonte e clicar no play, desliga
     if (playing && !selectedSource) {
       a.pause();
-      a.src = "";
+      a.removeAttribute('src');
+      a.load();
       setPlaying(false);
       setLoading(false);
       return;
@@ -321,9 +322,9 @@ export default function App() {
       setLoading(true);
       setAudioSource(sourceToPlay);
 
-      // Limpeza completa do estado do leitor
+      // Limpeza estrita para evitar travamentos do Safari iOS
       a.pause();
-      a.src = "";
+      a.removeAttribute('src');
       a.load();
 
       let targetUrl = STREAM_URL + "?nocache=" + Date.now();
@@ -342,13 +343,9 @@ export default function App() {
       setPlaying(true);
       if (sourceToPlay === 'circuito') fetchNowPlaying();
     } catch (e) {
-      console.error("Erro ao iniciar reprodução:", e);
+      console.error("Erro na reprodução de áudio:", e);
       setPlaying(false);
-      if (sourceToPlay === 'marcoense') {
-        setError("O stream direto da Rádio Marcoense está momentaneamente indisponível.");
-      } else {
-        setError("Erro ao conectar à transmissão. Tente novamente.");
-      }
+      setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
     } finally {
       setLoading(false);
     }
