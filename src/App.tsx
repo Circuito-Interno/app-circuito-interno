@@ -1,11 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Volume2, VolumeX, Radio, Calendar, Car, Clock, AlertCircle, Moon, Sun } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Radio,
+  Calendar,
+  Car,
+  Clock,
+  AlertCircle,
+  Moon,
+  Sun,
+} from 'lucide-react';
 
 /* =========================================================
-   STREAMS ORIGINAIS (Circuito Interno Direto sem Proxy)
+   CONFIGURAÇÃO DOS STREAMS
    ========================================================= */
-const STREAM_CIRCUITO_DIRECT = 'https://rhoster.pt/listen/circuito_interno/radio.mp3';
-const STREAM_MARCOENSE_PROXY = 'https://circuito-interno.vercel.app/api/stream?source=marcoense';
+
+const STREAM_CIRCUITO = 'https://circuito-interno.vercel.app/api/stream?source=circuito';
+const STREAM_MARCOENSE = 'https://circuito-interno.vercel.app/api/stream?source=marcoense';
 
 type AudioSource = 'circuito' | 'marcoense';
 
@@ -18,9 +31,27 @@ interface ScheduleItem {
 }
 
 const SCHEDULE: ScheduleItem[] = [
-  { id: '1', title: 'Circuito Interno - Romântico', day: 'Terça a Quinta', time: '22h00 às 24h00', description: 'As melhores baladas e músicas românticas para embalar a sua noite.' },
-  { id: '2', title: 'Circuito Interno - Rock & Indie Alternativo', day: 'Sexta', time: '22h00 às 24h00', description: 'Uma seleção com o melhor do Rock clássico, Indie e música alternativa.' },
-  { id: '3', title: 'Circuito Interno - Grandes Clássicos', day: 'Sábado', time: '13h00 às 15h00', description: 'Os intemporais que marcaram gerações e fizeram história na música.' },
+  {
+    id: '1',
+    title: 'Circuito Interno - Romântico',
+    day: 'Terça a Quinta',
+    time: '22h00 às 24h00',
+    description: 'As melhores baladas e músicas românticas para embalar a sua noite.',
+  },
+  {
+    id: '2',
+    title: 'Circuito Interno - Rock & Indie Alternativo',
+    day: 'Sexta',
+    time: '22h00 às 24h00',
+    description: 'Uma seleção com o melhor do Rock clássico, Indie e música alternativa.',
+  },
+  {
+    id: '3',
+    title: 'Circuito Interno - Grandes Clássicos',
+    day: 'Sábado',
+    time: '13h00 às 15h00',
+    description: 'Os intemporais que marcaram gerações e fizeram história na música.',
+  },
 ];
 
 const SPECIAL_SHOWS = [
@@ -53,14 +84,15 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* =========================================================
-     MEDIA SESSION (Controlos no ecrã de bloqueio do iOS)
+     MEDIA SESSION (SUPORTE DE ECRÃ DE BLOQUEIO NO IOS)
      ========================================================= */
+
   const updateMediaSession = (titleName: string) => {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: audioSource === 'marcoense' ? 'Rádio Marcoense (93.3 FM)' : titleName,
         artist: 'Rádio Circuito Interno',
-        album: 'Emissão Online',
+        album: 'Emissão Online 24/7',
       });
 
       navigator.mediaSession.setActionHandler('play', () => {
@@ -73,21 +105,23 @@ export default function App() {
   };
 
   /* =========================================================
-     METADADOS DO AZURACAST (Rhoster)
+     OBTER METADADOS RHOSTER / AZURACAST
      ========================================================= */
+
   const fetchNowPlaying = async () => {
     try {
       const res = await fetch('https://rhoster.pt/api/nowplaying/1');
       if (res.ok) {
         const data = await res.json();
         if (data?.now_playing?.song) {
-          const songText = `${data.now_playing.song.title} - ${data.now_playing.song.artist}`;
-          setCurrentSong(songText);
-          updateMediaSession(songText);
+          const song = data.now_playing.song;
+          const fullTitle = `${song.title} - ${song.artist}`;
+          setCurrentSong(fullTitle);
+          updateMediaSession(fullTitle);
         }
       }
     } catch {
-      /* Falha silenciosa sem afetar áudio */
+      // Ignora erro silenciosamente
     }
   };
 
@@ -107,6 +141,7 @@ export default function App() {
   /* =========================================================
      COUNTDOWN E NOTÍCIAS
      ========================================================= */
+
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
@@ -121,9 +156,10 @@ export default function App() {
         for (const show of SPECIAL_SHOWS) {
           if (!show.days.includes(targetDay)) continue;
           const startMinutes = show.startHour * 60;
-          let diffMinutes = dayOffset === 0
-            ? startMinutes - currentTimeInMinutes
-            : dayOffset * 24 * 60 + startMinutes - currentTimeInMinutes;
+          let diffMinutes =
+            dayOffset === 0
+              ? startMinutes - currentTimeInMinutes
+              : dayOffset * 24 * 60 + startMinutes - currentTimeInMinutes;
 
           if (diffMinutes >= 0 && diffMinutes < bestDiff) {
             bestDiff = diffMinutes;
@@ -149,15 +185,20 @@ export default function App() {
         let allTitles: string[] = [];
         for (const feed of RSS_FEEDS) {
           try {
-            const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`);
-            if (response.ok) {
-              const data = await response.json();
-              if (data.items) {
-                const titles = data.items.slice(0, 3).map((item: any) => `${feed.name}: ${item.title}`);
-                allTitles = [...allTitles, ...titles];
-              }
+            const response = await fetch(
+              `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`
+            );
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (data.items) {
+              const titles = data.items
+                .slice(0, 3)
+                .map((item: any) => `${feed.name}: ${item.title}`);
+              allTitles = [...allTitles, ...titles];
             }
-          } catch {}
+          } catch {
+            /* Continua */
+          }
         }
         if (allTitles.length > 0) setNews(allTitles);
       } catch (err) {
@@ -173,6 +214,7 @@ export default function App() {
   /* =========================================================
      CONTROLO DE ÁUDIO
      ========================================================= */
+
   const stopAudio = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -211,9 +253,10 @@ export default function App() {
 
       setAudioSource(targetSource);
 
-      const targetUrl = targetSource === 'marcoense'
-        ? STREAM_MARCOENSE_PROXY
-        : `${STREAM_CIRCUITO_DIRECT}?nocache=${Date.now()}`;
+      const targetUrl =
+        targetSource === 'marcoense'
+          ? STREAM_MARCOENSE
+          : `${STREAM_CIRCUITO}&nocache=${Date.now()}`;
 
       audio.src = targetUrl;
       audio.volume = muted ? 0 : volume;
@@ -233,7 +276,7 @@ export default function App() {
       console.error('Erro reprodução:', err);
       setPlaying(false);
       setLoading(false);
-      setError('Não foi possível iniciar a emissão.');
+      setError('Não foi possível iniciar a rádio.');
     }
   };
 
@@ -241,10 +284,17 @@ export default function App() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const handlePlay = () => { setPlaying(true); setLoading(false); };
+    const handlePlay = () => {
+      setPlaying(true);
+      setLoading(false);
+    };
     const handlePause = () => setPlaying(false);
     const handleWaiting = () => setLoading(true);
-    const handlePlaying = () => { setPlaying(true); setLoading(false); setError(null); };
+    const handlePlaying = () => {
+      setPlaying(true);
+      setLoading(false);
+      setError(null);
+    };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
@@ -278,11 +328,17 @@ export default function App() {
     setMuted(newMuted);
   };
 
-  const playerTitle = audioSource === 'marcoense' ? 'Rádio Marcoense (Em Direto)' : currentSong;
-  const playerSubtitle = audioSource === 'marcoense' ? 'Sinal 93.3 FM' : 'Circuito Interno – A Sua Emissora';
+  const playerTitle =
+    audioSource === 'marcoense' ? 'Rádio Marcoense (Em Direto)' : currentSong;
+  const playerSubtitle =
+    audioSource === 'marcoense' ? 'Sinal 93.3 FM' : 'Circuito Interno – A Sua Emissora';
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-100 text-zinc-900'} transition-colors duration-300 font-sans pb-12`}>
+    <div
+      className={`min-h-screen ${
+        darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-zinc-100 text-zinc-900'
+      } transition-colors duration-300 font-sans pb-12`}
+    >
       <header className="border-b border-zinc-800/50 bg-zinc-900/40 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -290,18 +346,32 @@ export default function App() {
               <Radio className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="font-bold tracking-tight text-lg leading-none">RÁDIO CIRCUITO INTERNO</h1>
-              <span className="text-xs text-orange-500 font-medium tracking-wide uppercase">Emissão Online HD</span>
+              <h1 className="font-bold tracking-tight text-lg leading-none">
+                RÁDIO CIRCUITO INTERNO
+              </h1>
+              <span className="text-xs text-orange-500 font-medium tracking-wide uppercase">
+                Emissão Online
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setCarMode(!carMode)} className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${carMode ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800/80 text-zinc-300'}`}>
+            <button
+              onClick={() => setCarMode(!carMode)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                carMode
+                  ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20'
+                  : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
+              }`}
+            >
               <Car className="w-3.5 h-3.5" />
               <span>MODO CARRO</span>
             </button>
 
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full bg-zinc-800/80 text-zinc-300">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors"
+            >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
@@ -316,21 +386,49 @@ export default function App() {
           </div>
         )}
 
-        <div className={`relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-6 sm:p-8 shadow-2xl ${carMode ? 'py-12' : ''}`}>
+        <div
+          className={`relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-6 sm:p-8 shadow-2xl ${
+            carMode ? 'py-12' : ''
+          }`}
+        >
           <div className="flex justify-center gap-2 mb-8 flex-wrap">
-            <button onClick={() => toggle('circuito')} disabled={loading} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${audioSource === 'circuito' ? 'bg-orange-600 text-white' : 'bg-zinc-800/50 text-zinc-400'}`}>
+            <button
+              onClick={() => toggle('circuito')}
+              disabled={loading}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                audioSource === 'circuito'
+                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
+                  : 'bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400'
+              }`}
+            >
               RÁDIO 24/7
             </button>
 
-            <button onClick={() => toggle('marcoense')} disabled={loading} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${audioSource === 'marcoense' ? 'bg-red-600 text-white' : 'bg-zinc-800/50 text-zinc-400'}`}>
+            <button
+              onClick={() => toggle('marcoense')}
+              disabled={loading}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                audioSource === 'marcoense'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
+                  : 'bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400'
+              }`}
+            >
               📻 DIRETO RÁDIO MARCOENSE
             </button>
           </div>
 
           <div className="flex flex-col items-center text-center space-y-4">
-            <div className={`relative rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center shadow-2xl transition-all duration-300 ${carMode ? 'w-48 h-48' : 'w-40 h-40'}`}>
+            <div
+              className={`relative rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center shadow-2xl transition-all duration-300 ${
+                carMode ? 'w-48 h-48' : 'w-40 h-40'
+              }`}
+            >
               <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/20 to-transparent" />
-              <Radio className={`text-orange-500 ${carMode ? 'w-24 h-24' : 'w-20 h-20'} ${playing ? 'animate-pulse' : ''}`} />
+              <Radio
+                className={`text-orange-500 ${
+                  carMode ? 'w-24 h-24' : 'w-20 h-20'
+                } ${playing ? 'animate-pulse' : ''}`}
+              />
             </div>
 
             <div>
@@ -338,7 +436,14 @@ export default function App() {
               <p className="text-sm text-zinc-400 mt-1">{playerSubtitle}</p>
             </div>
 
-            <button onClick={() => toggle()} disabled={loading} aria-label={playing ? 'Pausar rádio' : 'Reproduzir rádio'} className={`rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white flex items-center justify-center transition-all shadow-xl ${carMode ? 'w-28 h-28' : 'w-20 h-20'}`}>
+            <button
+              onClick={() => toggle()}
+              disabled={loading}
+              aria-label={playing ? 'Pausar rádio' : 'Reproduzir rádio'}
+              className={`rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white flex items-center justify-center transition-all shadow-xl shadow-orange-600/30 active:scale-95 ${
+                carMode ? 'w-28 h-28' : 'w-20 h-20'
+              }`}
+            >
               {loading ? (
                 <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
               ) : playing ? (
@@ -350,11 +455,27 @@ export default function App() {
 
             {!carMode && (
               <div className="flex items-center gap-3 w-full max-w-xs pt-4">
-                <button onClick={toggleMute} className="text-zinc-400 hover:text-white">
-                  {muted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                <button
+                  onClick={toggleMute}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                  aria-label={muted ? 'Ativar som' : 'Silenciar'}
+                >
+                  {muted || volume === 0 ? (
+                    <VolumeX className="w-5 h-5" />
+                  ) : (
+                    <Volume2 className="w-5 h-5" />
+                  )}
                 </button>
 
-                <input type="range" min="0" max="1" step="0.01" value={muted ? 0 : volume} onChange={handleVolumeChange} className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={muted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                />
               </div>
             )}
           </div>
@@ -363,7 +484,10 @@ export default function App() {
         {news.length > 0 && (
           <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl px-4 py-3 overflow-hidden">
             <div className="flex items-center gap-3">
-              <span className="bg-orange-500/10 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-md shrink-0 border border-orange-500/20">ÚLTIMAS</span>
+              <span className="bg-orange-500/10 text-orange-400 text-xs font-bold px-2.5 py-1 rounded-md shrink-0 border border-orange-500/20">
+                ÚLTIMAS
+              </span>
+
               <div className="whitespace-nowrap overflow-hidden text-sm text-zinc-300">
                 <div className="inline-block animate-marquee">{news.join('  •  ')}</div>
               </div>
@@ -377,6 +501,7 @@ export default function App() {
               <Calendar className="w-5 h-5 text-orange-500" />
               Programação
             </h3>
+
             {nextShowText && (
               <span className="text-xs text-zinc-400 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-orange-400" />
@@ -387,9 +512,16 @@ export default function App() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             {SCHEDULE.map((item) => (
-              <div key={item.id} className="bg-zinc-900/80 border border-zinc-800/60 p-4 rounded-2xl">
-                <span className="text-xs font-semibold text-orange-400 block mb-1">{item.day} • {item.time}</span>
+              <div
+                key={item.id}
+                className="bg-zinc-900/80 border border-zinc-800/60 p-4 rounded-2xl hover:border-zinc-700 transition-all"
+              >
+                <span className="text-xs font-semibold text-orange-400 block mb-1">
+                  {item.day} • {item.time}
+                </span>
+
                 <h4 className="font-bold text-sm mb-1">{item.title}</h4>
+
                 <p className="text-xs text-zinc-400 leading-relaxed">{item.description}</p>
               </div>
             ))}
