@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Calendar, Car, Clock, AlertCircle, Moon, Sun } from 'lucide-react';
 
-// STREAMS E RECURSOS
+// STREAMS
 const STREAM_URL = "https://stream.zeno.fm/f326190m038uv";
 const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 
@@ -25,7 +25,6 @@ const SPECIAL_SHOWS = [
   { name: "Circuito Interno – Grandes Clássicos", days: [6], startHour: 13, endHour: 15 }
 ];
 
-// FEEDS RSS DIREITOS DE JORNAIS PORTUGUESES
 const RSS_FEEDS = [
   { name: 'Jornal de Notícias', url: 'https://www.jn.pt/rss/ultima-hora.xml' },
   { name: 'Diário de Notícias', url: 'https://www.dn.pt/rss/ultima-hora.xml' },
@@ -49,7 +48,7 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Countdown do próximo programa
+  // Countdown
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
@@ -89,7 +88,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch das notícias RSS
+  // RSS News
   useEffect(() => {
     const fetchNews = async () => {
       try {
@@ -113,7 +112,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch Metadata
+  // Metadata
   const fetchNowPlaying = async () => {
     try {
       const response = await fetch("https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv");
@@ -145,38 +144,42 @@ export default function App() {
     }
   }, [playing, audioSource]);
 
-  // Função Toggle com suporte para tag Audio nativa no iOS
+  // Função Toggle Simplificada e Robusta para iOS
   const toggle = (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const nextSource = selectedSource || audioSource;
+    const targetSource = selectedSource || audioSource;
 
+    // Parar se já estiver a tocar a mesma fonte
     if (playing && (!selectedSource || selectedSource === audioSource)) {
       audio.pause();
       setPlaying(false);
+      setLoading(false);
       return;
     }
 
     setError(null);
     setLoading(true);
 
-    if (nextSource !== audioSource) {
-      setAudioSource(nextSource);
-      audio.src = nextSource === 'marcoense' 
-        ? RADIO_MARCOENSE_STREAM 
-        : (nextSource === 'local' ? "/musica.mp3" : STREAM_URL);
-      audio.load();
-    }
+    const newUrl = targetSource === 'marcoense' 
+      ? RADIO_MARCOENSE_STREAM 
+      : (targetSource === 'local' ? "/musica.mp3" : STREAM_URL);
+
+    setAudioSource(targetSource);
+
+    // Carregar novo stream
+    audio.src = newUrl;
+    audio.load();
 
     audio.play()
       .then(() => {
         setPlaying(true);
         setLoading(false);
-        if (nextSource === 'circuito') fetchNowPlaying();
+        if (targetSource === 'circuito') fetchNowPlaying();
       })
       .catch((err) => {
-        console.error("Erro iOS Play:", err);
+        console.error("Erro ao reproduzir no iOS:", err);
         setPlaying(false);
         setLoading(false);
         setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
@@ -352,14 +355,10 @@ export default function App() {
 
       </main>
 
-      {/* Elemento de Áudio Nativo para compatibilidade total com iOS Safari */}
+      {/* Tag de Áudio Nativa Limpa sem handlers intrusivos */}
       <audio
         ref={audioRef}
-        src={audioSource === 'marcoense' ? RADIO_MARCOENSE_STREAM : STREAM_URL}
         preload="none"
-        onWaiting={() => setLoading(true)}
-        onPlaying={() => { setLoading(false); setPlaying(true); setError(null); }}
-        onError={() => { setLoading(false); setPlaying(false); setError("Não foi possível carregar a emissão. Verifica a tua ligação."); }}
       />
     </div>
   );
