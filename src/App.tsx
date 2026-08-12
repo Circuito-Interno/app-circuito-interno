@@ -103,48 +103,55 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* =========================================================
-     METADADOS EM TEMPO REAL (EVENTSOURCE / SSE)
+     METADADOS VIA JSON FALLBACK / API
      ========================================================= */
 
-  useEffect(() => {
-    let eventSource: EventSource | null = null;
-
+  const fetchNowPlaying = async () => {
     try {
-      // Abre a ligação contínua de Server-Sent Events com a Zeno FM
-      eventSource = new EventSource(
-        'https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv'
+      const res = await fetch(
+        'https://api.allorigins.win/raw?url=' +
+          encodeURIComponent('https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv'),
+        { cache: 'no-store' }
       );
-
-      eventSource.onmessage = (event) => {
-        if (!event.data) return;
-
-        try {
-          const data = JSON.parse(event.data);
-          if (data.streamTitle) {
-            setCurrentSong(data.streamTitle);
-          }
-        } catch {
-          // Fallback para caso o título venha formatado em texto simples ou JSON parcial
-          const match = event.data.match(/"streamTitle"\s*:\s*"([^"]+)"/);
-          if (match?.[1]) {
-            setCurrentSong(match[1]);
-          }
+      if (res.ok) {
+        const text = await res.text();
+        const match = text.match(/"streamTitle"\s*:\s*"([^"]+)"/);
+        if (match?.[1]) {
+          setCurrentSong(match[1]);
+          updateMediaSession(match[1]);
         }
-      };
-
-      eventSource.onerror = (err) => {
-        console.log('Reconectando aos metadados SSE...', err);
-      };
-    } catch (err) {
-      console.error('Erro ao inicializar EventSource de metadados:', err);
-    }
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
       }
-    };
+    } catch (e) {
+      console.log('Erro ao carregar metadados:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchNowPlaying();
+    const interval = setInterval(fetchNowPlaying, 12000);
+    return () => clearInterval(interval);
   }, []);
+
+  /* =========================================================
+     MEDIA SESSION API (ECRÃ DE BLOQUEIO DO IOS/ANDROID)
+     ========================================================= */
+
+  const updateMediaSession = (title: string) => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: audioSource === 'marcoense' ? 'Rádio Marcoense (93.3 FM)' : title,
+        artist: 'Rádio Circuito Interno',
+        album: 'Emissão Online Live',
+        artwork: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => toggle());
+      navigator.mediaSession.setActionHandler('pause', () => stopAudio());
+    }
+  };
 
   /* =========================================================
      COUNTDOWN
@@ -224,7 +231,7 @@ export default function App() {
               allTitles = [...allTitles, ...titles];
             }
           } catch {
-            /* Se uma fonte falhar, continua para a seguinte */
+            /* Continua em caso de falha individual */
           }
         }
 
@@ -303,6 +310,7 @@ export default function App() {
 
       setPlaying(true);
       setLoading(false);
+      updateMediaSession(currentSong);
     } catch (err) {
       console.error('Erro ao iniciar reprodução:', err);
 
@@ -617,7 +625,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* AUDIO NATIVO */}
+      {/* AUDIO NATIVO COM SUPORTE BACKGROUND */}
       <audio ref={audioRef} preload="none" playsInline />
     </div>
   );
