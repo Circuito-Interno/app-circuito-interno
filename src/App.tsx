@@ -49,7 +49,37 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Calcular próximo programa em direto
+  // Inicializar o áudio nativo uma única vez
+  useEffect(() => {
+    const audio = new Audio();
+    audio.preload = 'none';
+    audioRef.current = audio;
+
+    const handleWaiting = () => setLoading(true);
+    const handlePlaying = () => {
+      setLoading(false);
+      setPlaying(true);
+      setError(null);
+    };
+    const handleError = () => {
+      setLoading(false);
+      setPlaying(false);
+      setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
+    };
+
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('error', handleError);
+      audio.pause();
+    };
+  }, []);
+
+  // Countdown do próximo programa
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
@@ -113,7 +143,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch Now Playing Metadata
+  // Fetch Metadata
   const fetchNowPlaying = async () => {
     try {
       const response = await fetch("https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv");
@@ -127,13 +157,13 @@ export default function App() {
               const data = JSON.parse(text);
               if (data.streamTitle) setCurrentSong(data.streamTitle);
             } catch (e) {
-              // Ignore parse errors
+              // Ignore
             }
           }
         }
       }
     } catch (e) {
-      console.log("Erro ao carregar metadata:", e);
+      console.log("Erro metadata:", e);
     }
   };
 
@@ -145,15 +175,17 @@ export default function App() {
     }
   }, [playing, audioSource]);
 
-  // Função Toggle com recriação de áudio nativo para iOS Safari
+  // Função Toggle limpa e direta
   const toggle = async (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
     const sourceToPlay = selectedSource || audioSource;
 
-    if (playing && !selectedSource) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
+    // Se já estiver a tocar e clicou no mesmo botão para parar
+    if (playing && (!selectedSource || selectedSource === audioSource)) {
+      audio.pause();
+      audio.src = "";
       setPlaying(false);
       setLoading(false);
       return;
@@ -164,32 +196,26 @@ export default function App() {
       setLoading(true);
       setAudioSource(sourceToPlay);
 
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeAttribute('src');
-        audioRef.current.load();
-      }
-
       const targetUrl = sourceToPlay === 'marcoense' 
         ? RADIO_MARCOENSE_STREAM 
         : (sourceToPlay === 'local' ? "/musica.mp3" : STREAM_URL);
 
-      const newAudio = new Audio(targetUrl);
-      newAudio.volume = muted ? 0 : volume;
-      newAudio.muted = muted;
+      audio.pause();
+      audio.src = targetUrl;
+      audio.volume = muted ? 0 : volume;
+      audio.muted = muted;
 
-      audioRef.current = newAudio;
-
-      await newAudio.play();
-      setPlaying(true);
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
 
       if (sourceToPlay === 'circuito') fetchNowPlaying();
     } catch (e) {
-      console.error("Erro iOS Safari Audio:", e);
+      console.error("Erro ao reproduzir:", e);
+      setLoading(false);
       setPlaying(false);
       setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
-    } finally {
-      setLoading(false);
     }
   };
 
