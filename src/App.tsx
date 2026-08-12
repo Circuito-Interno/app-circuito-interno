@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Calendar, Car, Clock, AlertCircle, Moon, Sun } from 'lucide-react';
 
-// STREAMS OFICIAIS
-const STREAM_URL = "https://stream.zeno.fm/f326190m038uv";
+// STREAMS ORIGINAIS FUNCIONAIS
+const STREAM_URL = "https://stream.zenolive.com/f326190m038uv";
 const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 
 interface ScheduleItem {
@@ -48,7 +48,38 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Countdown do Próximo Programa
+  // Metadados da Música em Tempo Real (Zeno FM)
+  const fetchNowPlaying = async () => {
+    try {
+      const response = await fetch("https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv");
+      if (response.ok) {
+        const reader = response.body?.getReader();
+        if (reader) {
+          const { value } = await reader.read();
+          const text = new TextDecoder().decode(value);
+          if (text) {
+            try {
+              const data = JSON.parse(text);
+              if (data.streamTitle) setCurrentSong(data.streamTitle);
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Erro metadata:", e);
+    }
+  };
+
+  // Carrega a música logo ao abrir a página (mesmo antes do Play)
+  useEffect(() => {
+    fetchNowPlaying();
+    const interval = setInterval(fetchNowPlaying, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Countdown
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
@@ -88,7 +119,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Notícias RSS
+  // RSS News
   useEffect(() => {
     const fetchNews = async () => {
       try {
@@ -112,46 +143,13 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Metadata Zeno FM
-  const fetchNowPlaying = async () => {
-    try {
-      const response = await fetch("https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv");
-      if (response.ok) {
-        const reader = response.body?.getReader();
-        if (reader) {
-          const { value } = await reader.read();
-          const text = new TextDecoder().decode(value);
-          if (text) {
-            try {
-              const data = JSON.parse(text);
-              if (data.streamTitle) setCurrentSong(data.streamTitle);
-            } catch (e) {
-              // Ignore
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.log("Erro metadata:", e);
-    }
-  };
-
-  useEffect(() => {
-    if (audioSource === 'circuito' && playing) {
-      fetchNowPlaying();
-      const interval = setInterval(fetchNowPlaying, 15000);
-      return () => clearInterval(interval);
-    }
-  }, [playing, audioSource]);
-
-  // Função Toggle Robusta e Estável
+  // Player Principal Estável
   const toggle = (selectedSource?: 'circuito' | 'marcoense') => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const targetSource = selectedSource || audioSource;
 
-    // Se clicar no botão da mesma rádio que já está a tocar, faz Pause
     if (playing && (!selectedSource || selectedSource === audioSource)) {
       audio.pause();
       setPlaying(false);
@@ -168,13 +166,11 @@ export default function App() {
 
     audio.pause();
     audio.src = newUrl;
-    audio.load();
 
     audio.play()
       .then(() => {
         setPlaying(true);
         setLoading(false);
-        if (targetSource === 'circuito') fetchNowPlaying();
       })
       .catch((err) => {
         console.error("Erro ao reproduzir:", err);
@@ -265,7 +261,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Arte do Player & Título */}
+          {/* Arte do Player & Título da Música */}
           <div className="flex flex-col items-center text-center space-y-4">
             <div className={`relative rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center shadow-2xl transition-all duration-300 ${carMode ? 'w-48 h-48' : 'w-40 h-40'}`}>
               <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/20 to-transparent" />
@@ -353,7 +349,6 @@ export default function App() {
 
       </main>
 
-      {/* Tag de Áudio Nativa Limpa */}
       <audio
         ref={audioRef}
         preload="none"
