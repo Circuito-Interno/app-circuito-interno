@@ -6,7 +6,7 @@ import {
 
 // ENDEREÇOS OFICIAIS DOS STREAMS DE ÁUDIO (COMPATÍVEIS COM iOS / ANDROID / WEB)
 const STREAM_URL = "https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3";
-const RADIO_MARCOENSE_STREAM = "https://stream.emissora.pt/radiomarcoense";
+const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 const API_NOWPLAYING = "https://azuracast.rhoster.pt/api/nowplaying/circuito_interno";
 
 const SOCIALS = {
