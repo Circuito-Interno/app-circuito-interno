@@ -303,15 +303,14 @@ export default function App() {
 
   // CONTROLADOR DE REPRODUÇÃO MULTI-FONTE UNIVERSAL (iOS / ANDROID / WEB)
   const toggle = async (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
-    const a = audioRef.current;
-    if (!a) return;
-
     const sourceToPlay = selectedSource || audioSource;
 
+    // Se já estiver a tocar a mesma fonte, para a reprodução
     if (playing && !selectedSource) {
-      a.pause();
-      a.removeAttribute('src');
-      a.load();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
       setPlaying(false);
       setLoading(false);
       return;
@@ -322,28 +321,32 @@ export default function App() {
       setLoading(true);
       setAudioSource(sourceToPlay);
 
-      // Limpeza estrita para evitar travamentos do Safari iOS
-      a.pause();
-      a.removeAttribute('src');
-      a.load();
-
-      let targetUrl = STREAM_URL + "?nocache=" + Date.now();
-
-      if (sourceToPlay === 'marcoense') {
-        targetUrl = RADIO_MARCOENSE_STREAM;
-      } else if (sourceToPlay === 'local') {
-        targetUrl = "/musica.mp3";
+      // Destrói a instância anterior para limpar erros em cache no iOS
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+        audioRef.current.load();
       }
 
-      a.src = targetUrl;
-      a.volume = muted ? 0 : volume;
-      a.muted = muted;
-      
-      await a.play();
+      // Cria uma nova instância de áudio limpa
+      const targetUrl = sourceToPlay === 'marcoense' 
+        ? "https://stream.digitalrm.pt/radiomarcoense" 
+        : (sourceToPlay === 'local' ? "/musica.mp3" : STREAM_URL);
+
+      const newAudio = new Audio(targetUrl);
+      newAudio.volume = muted ? 0 : volume;
+      newAudio.muted = muted;
+
+      // Atualiza a referência
+      audioRef.current = newAudio;
+
+      // Tenta tocar com tratamento de promessa do Safari
+      await newAudio.play();
       setPlaying(true);
+
       if (sourceToPlay === 'circuito') fetchNowPlaying();
     } catch (e) {
-      console.error("Erro na reprodução de áudio:", e);
+      console.error("Erro iOS Safari Audio:", e);
       setPlaying(false);
       setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
     } finally {
