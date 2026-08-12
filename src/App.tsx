@@ -14,13 +14,12 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   STREAMS DE ÁUDIO
-   - Circuito Interno: Stream Nativo Direto (Som HD + Background iOS)
-   - Marcoense: Proxy Vercel (Supera bloqueio CORS/SSL)
+   STREAMS DE ÁUDIO (PROXY VERCEL FUNCIONAL PARA AMBAS)
    ========================================================= */
 
-const STREAM_CIRCUITO_DIRECT = 'https://rhoster.pt/listen/circuito_interno/radio.mp3';
-const STREAM_MARCOENSE_PROXY = 'https://circuito-interno.vercel.app/api/stream?source=marcoense';
+const VERCEL_API = 'https://circuito-interno.vercel.app/api/stream';
+const STREAM_CIRCUITO = `${VERCEL_API}?source=circuito`;
+const STREAM_MARCOENSE = `${VERCEL_API}?source=marcoense`;
 
 type AudioSource = 'circuito' | 'marcoense';
 
@@ -86,7 +85,7 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* =========================================================
-     CONTROLOS NO ECRÃ DE BLOQUEIO DO IOS (MEDIA SESSION)
+     MEDIA SESSION (ECRÃ DE BLOQUEIO IOS)
      ========================================================= */
 
   const updateMediaSession = (titleName: string) => {
@@ -94,7 +93,7 @@ export default function App() {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: audioSource === 'marcoense' ? 'Rádio Marcoense (93.3 FM)' : titleName,
         artist: 'Rádio Circuito Interno',
-        album: 'Emissão Online HD',
+        album: 'Emissão Online',
       });
 
       navigator.mediaSession.setActionHandler('play', () => {
@@ -107,7 +106,7 @@ export default function App() {
   };
 
   /* =========================================================
-     METADADOS EM TEMPO REAL (AZURACAST / RHOSTER)
+     METADADOS AZURACAST / RHOSTER
      ========================================================= */
 
   const fetchNowPlaying = async () => {
@@ -126,7 +125,7 @@ export default function App() {
         }
       }
     } catch {
-      // Ignora falhas para não bloquear a emissão
+      // Ignora falhas silenciosamente
     }
   };
 
@@ -260,8 +259,8 @@ export default function App() {
 
       const targetUrl =
         targetSource === 'marcoense'
-          ? STREAM_MARCOENSE_PROXY
-          : `${STREAM_CIRCUITO_DIRECT}?nocache=${Date.now()}`;
+          ? STREAM_MARCOENSE
+          : `${STREAM_CIRCUITO}&nocache=${Date.now()}`;
 
       audio.src = targetUrl;
       audio.volume = muted ? 0 : volume;
@@ -278,7 +277,7 @@ export default function App() {
         updateMediaSession('Rádio Marcoense (93.3 FM)');
       }
     } catch (err) {
-      console.error('Erro reprodução:', err);
+      console.error('Erro na reprodução:', err);
       setPlaying(false);
       setLoading(false);
       setError('Não foi possível iniciar a rádio.');
@@ -355,7 +354,7 @@ export default function App() {
                 RÁDIO CIRCUITO INTERNO
               </h1>
               <span className="text-xs text-orange-500 font-medium tracking-wide uppercase">
-                Emissão Online HD
+                Emissão Online
               </span>
             </div>
           </div>
