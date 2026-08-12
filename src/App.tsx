@@ -49,36 +49,6 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Inicializar o áudio nativo uma única vez
-  useEffect(() => {
-    const audio = new Audio();
-    audio.preload = 'none';
-    audioRef.current = audio;
-
-    const handleWaiting = () => setLoading(true);
-    const handlePlaying = () => {
-      setLoading(false);
-      setPlaying(true);
-      setError(null);
-    };
-    const handleError = () => {
-      setLoading(false);
-      setPlaying(false);
-      setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
-    };
-
-    audio.addEventListener('waiting', handleWaiting);
-    audio.addEventListener('playing', handlePlaying);
-    audio.addEventListener('error', handleError);
-
-    return () => {
-      audio.removeEventListener('waiting', handleWaiting);
-      audio.removeEventListener('playing', handlePlaying);
-      audio.removeEventListener('error', handleError);
-      audio.pause();
-    };
-  }, []);
-
   // Countdown do próximo programa
   useEffect(() => {
     const updateCountdown = () => {
@@ -175,48 +145,42 @@ export default function App() {
     }
   }, [playing, audioSource]);
 
-  // Função Toggle limpa e direta
-  const toggle = async (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
+  // Função Toggle com suporte para tag Audio nativa no iOS
+  const toggle = (selectedSource?: 'circuito' | 'marcoense' | 'local') => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const sourceToPlay = selectedSource || audioSource;
+    const nextSource = selectedSource || audioSource;
 
-    // Se já estiver a tocar e clicou no mesmo botão para parar
     if (playing && (!selectedSource || selectedSource === audioSource)) {
       audio.pause();
-      audio.src = "";
       setPlaying(false);
-      setLoading(false);
       return;
     }
 
-    try {
-      setError(null);
-      setLoading(true);
-      setAudioSource(sourceToPlay);
+    setError(null);
+    setLoading(true);
 
-      const targetUrl = sourceToPlay === 'marcoense' 
+    if (nextSource !== audioSource) {
+      setAudioSource(nextSource);
+      audio.src = nextSource === 'marcoense' 
         ? RADIO_MARCOENSE_STREAM 
-        : (sourceToPlay === 'local' ? "/musica.mp3" : STREAM_URL);
-
-      audio.pause();
-      audio.src = targetUrl;
-      audio.volume = muted ? 0 : volume;
-      audio.muted = muted;
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        await playPromise;
-      }
-
-      if (sourceToPlay === 'circuito') fetchNowPlaying();
-    } catch (e) {
-      console.error("Erro ao reproduzir:", e);
-      setLoading(false);
-      setPlaying(false);
-      setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
+        : (nextSource === 'local' ? "/musica.mp3" : STREAM_URL);
+      audio.load();
     }
+
+    audio.play()
+      .then(() => {
+        setPlaying(true);
+        setLoading(false);
+        if (nextSource === 'circuito') fetchNowPlaying();
+      })
+      .catch((err) => {
+        console.error("Erro iOS Play:", err);
+        setPlaying(false);
+        setLoading(false);
+        setError("Não foi possível carregar a emissão. Verifica a tua ligação.");
+      });
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,6 +351,16 @@ export default function App() {
         </div>
 
       </main>
+
+      {/* Elemento de Áudio Nativo para compatibilidade total com iOS Safari */}
+      <audio
+        ref={audioRef}
+        src={audioSource === 'marcoense' ? RADIO_MARCOENSE_STREAM : STREAM_URL}
+        preload="none"
+        onWaiting={() => setLoading(true)}
+        onPlaying={() => { setLoading(false); setPlaying(true); setError(null); }}
+        onError={() => { setLoading(false); setPlaying(false); setError("Não foi possível carregar a emissão. Verifica a tua ligação."); }}
+      />
     </div>
   );
 }
