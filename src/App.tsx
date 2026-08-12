@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Radio, Calendar, Car, Clock, AlertCircle, Moon, Sun } from 'lucide-react';
 
-// STREAMS ORIGINAIS FUNCIONAIS
-const STREAM_URL = "https://stream.zenolive.com/f326190m038uv";
+// STREAMS OFICIAIS
+const STREAM_URL = "https://stream.zeno.fm/f326190m038uv";
 const RADIO_MARCOENSE_STREAM = "https://stream.digitalrm.pt/radiomarcoense";
 
 interface ScheduleItem {
@@ -48,7 +48,7 @@ export default function App() {
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Metadados da Música em Tempo Real (Zeno FM)
+  // Metadados Zeno FM
   const fetchNowPlaying = async () => {
     try {
       const response = await fetch("https://api.zeno.fm/mounts/metadata/subscribe/f326190m038uv");
@@ -62,7 +62,7 @@ export default function App() {
               const data = JSON.parse(text);
               if (data.streamTitle) setCurrentSong(data.streamTitle);
             } catch (e) {
-              // Ignore parse errors
+              // Ignore
             }
           }
         }
@@ -72,7 +72,6 @@ export default function App() {
     }
   };
 
-  // Carrega a música logo ao abrir a página (mesmo antes do Play)
   useEffect(() => {
     fetchNowPlaying();
     const interval = setInterval(fetchNowPlaying, 10000);
@@ -143,7 +142,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Player Principal Estável
+  // Função Toggle
   const toggle = (selectedSource?: 'circuito' | 'marcoense') => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -160,12 +159,16 @@ export default function App() {
     setError(null);
     setLoading(true);
 
-    const newUrl = targetSource === 'marcoense' ? RADIO_MARCOENSE_STREAM : STREAM_URL;
+    if (targetSource === 'marcoense') {
+      // Rádio Marcoense: abrir no leitor nativo do browser para contornar o bloqueio CORS/SSL
+      window.open(RADIO_MARCOENSE_STREAM, '_blank');
+      setLoading(false);
+      setPlaying(false);
+      return;
+    }
 
-    setAudioSource(targetSource);
-
-    audio.pause();
-    audio.src = newUrl;
+    setAudioSource('circuito');
+    audio.src = STREAM_URL;
 
     audio.play()
       .then(() => {
@@ -261,7 +264,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Arte do Player & Título da Música */}
+          {/* Arte do Player & Título */}
           <div className="flex flex-col items-center text-center space-y-4">
             <div className={`relative rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center shadow-2xl transition-all duration-300 ${carMode ? 'w-48 h-48' : 'w-40 h-40'}`}>
               <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/20 to-transparent" />
