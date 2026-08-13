@@ -14,11 +14,11 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   ENDPOINTS DIRETOS HTTPS (Sem passar por Proxy Serverless)
+   ENDPOINTS VIA PROXY VERCEL (Para evitar bloqueios Mixed Content)
    ========================================================= */
 
-const STREAM_CIRCUITO = 'https://rhoster.pt/listen/circuito_interno/radio.mp3';
-const STREAM_MARCOENSE = 'https://stream.dominioglobal.pt/8024/stream';
+const STREAM_CIRCUITO = '/api/stream?source=circuito';
+const STREAM_MARCOENSE = '/api/stream?source=marcoense';
 
 type AudioSource = 'circuito' | 'marcoense';
 
@@ -254,7 +254,7 @@ export default function App() {
       const targetUrl =
         targetSource === 'marcoense'
           ? STREAM_MARCOENSE
-          : `${STREAM_CIRCUITO}?nocache=${Date.now()}`;
+          : `${STREAM_CIRCUITO}&t=${Date.now()}`;
 
       audio.src = targetUrl;
       audio.volume = muted ? 0 : volume;
