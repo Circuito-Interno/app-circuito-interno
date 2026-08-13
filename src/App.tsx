@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Play,
   Pause,
@@ -7,8 +7,6 @@ import {
   Radio,
   Calendar,
   Car,
-  Clock,
-  AlertCircle,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -76,14 +74,12 @@ export default function App() {
 
     const newSource = source || audioSource;
 
-    // Se carregou no botão da estação que já está a tocar, faz Pause
     if (playing && (!source || source === audioSource)) {
       audio.pause();
       setPlaying(false);
       return;
     }
 
-    // Se mudou de estação ou iniciou do zero
     setAudioSource(newSource);
     audio.src = STREAMS[newSource];
     audio.volume = muted ? 0 : volume;
