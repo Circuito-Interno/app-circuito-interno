@@ -14,11 +14,11 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   ENDPOINTS PROXY VERCEL
+   ENDPOINTS DIRETOS HTTPS (Sem passar por Proxy Serverless)
    ========================================================= */
 
-const STREAM_CIRCUITO = '/api/stream?source=circuito';
-const STREAM_MARCOENSE = '/api/stream?source=marcoense';
+const STREAM_CIRCUITO = 'https://rhoster.pt/listen/circuito_interno/radio.mp3';
+const STREAM_MARCOENSE = 'https://stream.dominioglobal.pt/8024/stream';
 
 type AudioSource = 'circuito' | 'marcoense';
 
@@ -254,7 +254,7 @@ export default function App() {
       const targetUrl =
         targetSource === 'marcoense'
           ? STREAM_MARCOENSE
-          : `${STREAM_CIRCUITO}&nocache=${Date.now()}`;
+          : `${STREAM_CIRCUITO}?nocache=${Date.now()}`;
 
       audio.src = targetUrl;
       audio.volume = muted ? 0 : volume;
@@ -293,17 +293,24 @@ export default function App() {
       setLoading(false);
       setError(null);
     };
+    const handleError = () => {
+      setPlaying(false);
+      setLoading(false);
+      setError('Não foi possível iniciar a rádio.');
+    };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
