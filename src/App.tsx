@@ -12,7 +12,34 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   STREAMS OFICIAIS
+   TIPOS - NOW PLAYING AZURACAST
+   ========================================================= */
+
+interface NowPlayingSong {
+  id: string;
+  art: string;
+  artist: string;
+  title: string;
+  album: string;
+  genre: string;
+}
+
+interface NowPlayingData {
+  now_playing?: {
+    song?: NowPlayingSong;
+    elapsed?: number;
+    remaining?: number;
+  };
+
+  playing_next?: {
+    song?: NowPlayingSong;
+  };
+
+  is_online?: boolean;
+}
+
+/* =========================================================
+   STREAMS
    ========================================================= */
 
 const STREAMS = {
@@ -23,7 +50,18 @@ const STREAMS = {
     'https://streaming.shoutcast.com/marcoense-fm',
 } as const;
 
-type AudioSource = keyof typeof STREAMS;
+/* =========================================================
+   AZURACAST NOW PLAYING
+   ========================================================= */
+
+const NOW_PLAYING_URL =
+  'https://azuracast.rhoster.pt/api/nowplaying/circuito_interno';
+
+type AudioSource = 'circuito' | 'marcoense';
+
+/* =========================================================
+   PROGRAMAÇÃO
+   ========================================================= */
 
 interface ScheduleItem {
   id: string;
@@ -60,24 +98,50 @@ const SCHEDULE: ScheduleItem[] = [
   },
 ];
 
+/* =========================================================
+   APP
+   ========================================================= */
+
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  /* =========================================================
+     ESTADO DO PLAYER
+     ========================================================= */
+
   const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
 
   const [volume, setVolume] = useState(0.8);
+
   const [muted, setMuted] = useState(false);
 
   const [audioSource, setAudioSource] =
     useState<AudioSource>('circuito');
 
   const [carMode, setCarMode] = useState(false);
+
   const [darkMode, setDarkMode] = useState(true);
 
+  const [loading, setLoading] = useState(false);
+
+  const [error, setError] = useState(false);
+
   /* =========================================================
-     EVENTOS DO AUDIO
+     NOW PLAYING
+     ========================================================= */
+
+  const [nowPlaying, setNowPlaying] =
+    useState<NowPlayingSong | null>(null);
+
+  const [nextSong, setNextSong] =
+    useState<NowPlayingSong | null>(null);
+
+  const [songElapsed, setSongElapsed] = useState(0);
+
+  const [songRemaining, setSongRemaining] = useState(0);
+
+  /* =========================================================
+     CONFIGURAÇÃO INICIAL DO AUDIO
      ========================================================= */
 
   useEffect(() => {
@@ -88,18 +152,36 @@ export default function App() {
     audio.volume = volume;
     audio.muted = muted;
 
+    /* ---------------------------------------------------------
+       PLAY
+       --------------------------------------------------------- */
+
     const handlePlay = () => {
       setPlaying(true);
+      setLoading(false);
+      setError(false);
     };
+
+    /* ---------------------------------------------------------
+       PAUSE
+       --------------------------------------------------------- */
 
     const handlePause = () => {
       setPlaying(false);
       setLoading(false);
     };
 
+    /* ---------------------------------------------------------
+       WAITING
+       --------------------------------------------------------- */
+
     const handleWaiting = () => {
       setLoading(true);
     };
+
+    /* ---------------------------------------------------------
+       PLAYING
+       --------------------------------------------------------- */
 
     const handlePlaying = () => {
       setPlaying(true);
@@ -107,45 +189,44 @@ export default function App() {
       setError(false);
     };
 
-    const handleCanPlay = () => {
-      setLoading(false);
-      setError(false);
-    };
+    /* ---------------------------------------------------------
+       ERROR
+       --------------------------------------------------------- */
 
     const handleError = () => {
-      console.error(
-        'Erro no elemento de áudio:',
-        audio.error
-      );
-
       setPlaying(false);
       setLoading(false);
       setError(true);
     };
 
+    /* ---------------------------------------------------------
+       ENDED
+       --------------------------------------------------------- */
+
     const handleEnded = () => {
       setPlaying(false);
-      setLoading(false);
     };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('waiting', handleWaiting);
     audio.addEventListener('playing', handlePlaying);
-    audio.addEventListener('canplay', handleCanPlay);
     audio.addEventListener('error', handleError);
     audio.addEventListener('ended', handleEnded);
+
+    /* ---------------------------------------------------------
+       CLEANUP
+       --------------------------------------------------------- */
 
     return () => {
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('playing', handlePlaying);
-      audio.removeEventListener('canplay', handleCanPlay);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [volume, muted]);
 
   /* =========================================================
      VOLUME / MUTE
@@ -161,113 +242,228 @@ export default function App() {
   }, [volume, muted]);
 
   /* =========================================================
-     PARAR COMPLETAMENTE O STREAM ATUAL
+     NOW PLAYING - AZURACAST
      ========================================================= */
 
-  const resetAudio = () => {
-    const audio = audioRef.current;
-
-    if (!audio) return;
-
-    audio.pause();
-
-    audio.removeAttribute('src');
-
+  useEffect(() => {
     /*
-     * load() força o browser a abandonar completamente
-     * a ligação anterior ao stream.
+     * Só precisamos do Now Playing para o Circuito Interno.
      */
-    audio.load();
 
-    setPlaying(false);
-    setLoading(false);
-  };
+    if (audioSource !== 'circuito') {
+      setNowPlaying(null);
+      setNextSong(null);
+      setSongElapsed(0);
+      setSongRemaining(0);
+
+      return;
+    }
+
+    let cancelled = false;
+
+    /* ---------------------------------------------------------
+       FUNÇÃO PARA OBTER DADOS DO AZURACAST
+       --------------------------------------------------------- */
+
+    const fetchNowPlaying = async () => {
+      try {
+        const response = await fetch(
+          `${NOW_PLAYING_URL}?_=${Date.now()}`,
+          {
+            cache: 'no-store',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Now Playing HTTP ${response.status}`
+          );
+        }
+
+        const data =
+          (await response.json()) as NowPlayingData;
+
+        if (cancelled) return;
+
+        /* -----------------------------------------------------
+           MÚSICA ATUAL
+           ----------------------------------------------------- */
+
+        const currentSong =
+          data.now_playing?.song ?? null;
+
+        /* -----------------------------------------------------
+           PRÓXIMA MÚSICA
+           ----------------------------------------------------- */
+
+        const upcomingSong =
+          data.playing_next?.song ?? null;
+
+        /* -----------------------------------------------------
+           ATUALIZAR ESTADO
+           ----------------------------------------------------- */
+
+        setNowPlaying(currentSong);
+
+        setNextSong(upcomingSong);
+
+        setSongElapsed(
+          data.now_playing?.elapsed ?? 0
+        );
+
+        setSongRemaining(
+          data.now_playing?.remaining ?? 0
+        );
+      } catch (err) {
+        console.error(
+          'Erro ao obter Now Playing do AzuraCast:',
+          err
+        );
+      }
+    };
+
+    /* ---------------------------------------------------------
+       PRIMEIRA CONSULTA IMEDIATA
+       --------------------------------------------------------- */
+
+    fetchNowPlaying();
+
+    /* ---------------------------------------------------------
+       ATUALIZAR A CADA 10 SEGUNDOS
+       --------------------------------------------------------- */
+
+    const interval = window.setInterval(
+      fetchNowPlaying,
+      10000
+    );
+
+    /* ---------------------------------------------------------
+       CLEANUP
+       --------------------------------------------------------- */
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [audioSource]);
+
+  /* =========================================================
+     CONTADOR LOCAL DA MÚSICA
+     ========================================================= */
+
+  useEffect(() => {
+    /*
+     * Só contamos quando o Circuito Interno está a tocar.
+     */
+
+    if (
+      !playing ||
+      audioSource !== 'circuito'
+    ) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setSongElapsed((value) => value + 1);
+
+      setSongRemaining((value) =>
+        value > 0 ? value - 1 : 0
+      );
+    }, 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [playing, audioSource]);
 
   /* =========================================================
      TOCAR / MUDAR DE RÁDIO
      ========================================================= */
 
-  const playSource = async (source: AudioSource) => {
+  const playSource = async (
+    source: AudioSource
+  ) => {
     const audio = audioRef.current;
 
     if (!audio) return;
 
-    /*
-     * Caso seja a mesma rádio:
-     * apenas Play/Pause.
-     */
-    if (audioSource === source && audio.src) {
-      if (audio.paused) {
-        try {
-          setLoading(true);
-          setError(false);
-
-          await audio.play();
-        } catch (err) {
-          console.error(
-            'Erro ao retomar a emissão:',
-            err
-          );
-
-          setPlaying(false);
-          setLoading(false);
-          setError(true);
-        }
-      } else {
-        audio.pause();
-      }
-
-      return;
-    }
-
-    /*
-     * Estamos a mudar de rádio.
-     */
     setLoading(true);
     setError(false);
 
-    /*
-     * Parar completamente a rádio anterior.
-     */
-    resetAudio();
-
-    /*
-     * Atualizar a rádio selecionada.
-     */
-    setAudioSource(source);
-
-    /*
-     * Configurar o novo stream.
-     */
-    audio.src = STREAMS[source];
-    audio.preload = 'none';
-    audio.volume = volume;
-    audio.muted = muted;
-
-    /*
-     * O play() é chamado diretamente a partir da
-     * ação do utilizador, permitindo autoplay do stream.
-     */
     try {
+      /*
+       * Se estamos na mesma rádio,
+       * apenas alternamos Play / Pause.
+       */
+
+      if (
+        audioSource === source &&
+        audio.src === STREAMS[source]
+      ) {
+        if (audio.paused) {
+          await audio.play();
+        } else {
+          audio.pause();
+        }
+
+        return;
+      }
+
+      /* -------------------------------------------------------
+         PARAR COMPLETAMENTE O STREAM ANTERIOR
+         ------------------------------------------------------- */
+
+      audio.pause();
+
+      audio.removeAttribute('src');
+
+      audio.load();
+
+      setPlaying(false);
+
+      /* -------------------------------------------------------
+         ALTERAR RÁDIO
+         ------------------------------------------------------- */
+
+      setAudioSource(source);
+
+      /* -------------------------------------------------------
+         CARREGAR NOVO STREAM
+         ------------------------------------------------------- */
+
+      audio.src = STREAMS[source];
+
+      audio.preload = 'none';
+
+      audio.volume = volume;
+
+      audio.muted = muted;
+
+      /* -------------------------------------------------------
+         INICIAR REPRODUÇÃO
+         ------------------------------------------------------- */
+
       await audio.play();
 
       setPlaying(true);
+
       setLoading(false);
-      setError(false);
     } catch (err) {
       console.error(
-        `Erro ao iniciar ${source}:`,
+        'Erro ao iniciar o stream:',
         err
       );
 
       setPlaying(false);
+
       setLoading(false);
+
       setError(true);
     }
   };
 
   /* =========================================================
-     PLAY / PAUSE PRINCIPAL
+     PLAY / PAUSE
      ========================================================= */
 
   const togglePlay = async () => {
@@ -275,22 +471,30 @@ export default function App() {
 
     if (!audio) return;
 
+    /*
+     * Se está a tocar, pausa.
+     */
+
     if (!audio.paused) {
       audio.pause();
       return;
     }
 
+    /*
+     * Caso contrário inicia a rádio selecionada.
+     */
+
     await playSource(audioSource);
   };
 
   /* =========================================================
-     ALTERAÇÃO DO VOLUME
+     VOLUME
      ========================================================= */
 
   const handleVolumeChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const value = Number(event.target.value);
+    const value = Number(e.target.value);
 
     setVolume(value);
 
@@ -300,12 +504,17 @@ export default function App() {
 
     audio.volume = value;
 
-    if (value === 0) {
-      audio.muted = true;
-      setMuted(true);
-    } else {
+    /*
+     * Se o volume for superior a zero,
+     * retiramos o mute.
+     */
+
+    if (value > 0) {
       audio.muted = false;
       setMuted(false);
+    } else {
+      audio.muted = true;
+      setMuted(true);
     }
   };
 
@@ -326,21 +535,17 @@ export default function App() {
   };
 
   /* =========================================================
-     SELEÇÃO DA RÁDIO
+     SELEÇÃO DE RÁDIO
      ========================================================= */
 
   const handleSourceChange = async (
     source: AudioSource
   ) => {
-    if (source === audioSource && playing) {
-      return;
-    }
-
     await playSource(source);
   };
 
   /* =========================================================
-     INFORMAÇÃO DA RÁDIO ATUAL
+     LABELS
      ========================================================= */
 
   const currentRadioTitle =
@@ -354,6 +559,45 @@ export default function App() {
       : 'Emissão Online 24/7';
 
   /* =========================================================
+     FORMATAR TEMPO
+     ========================================================= */
+
+  const formatTime = (
+    seconds: number
+  ) => {
+    const safeSeconds = Math.max(
+      0,
+      Math.floor(seconds)
+    );
+
+    const minutes = Math.floor(
+      safeSeconds / 60
+    );
+
+    const remainingSeconds =
+      safeSeconds % 60;
+
+    return `${minutes}:${remainingSeconds
+      .toString()
+      .padStart(2, '0')}`;
+  };
+
+  /* =========================================================
+     PROGRESSO DA MÚSICA
+     ========================================================= */
+
+  const totalSongTime =
+    songElapsed + songRemaining;
+
+  const songProgress =
+    totalSongTime > 0
+      ? Math.min(
+          100,
+          (songElapsed / totalSongTime) * 100
+        )
+      : 0;
+
+  /* =========================================================
      RENDER
      ========================================================= */
 
@@ -365,18 +609,25 @@ export default function App() {
           : 'bg-zinc-100 text-zinc-900'
       } transition-colors duration-300 font-sans pb-12`}
     >
+
       {/* =====================================================
           HEADER
           ===================================================== */}
 
       <header className="border-b border-zinc-800/50 bg-zinc-900/40 backdrop-blur-md sticky top-0 z-50">
+
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+
           <div className="flex items-center gap-3">
+
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+
               <Radio className="w-5 h-5" />
+
             </div>
 
             <div>
+
               <h1 className="font-bold tracking-tight text-lg leading-none">
                 RÁDIO CIRCUITO INTERNO
               </h1>
@@ -384,13 +635,18 @@ export default function App() {
               <span className="text-xs text-orange-500 font-medium tracking-wide uppercase">
                 Emissão Online HD
               </span>
+
             </div>
+
           </div>
 
           <div className="flex items-center gap-2">
+
             <button
               onClick={() =>
-                setCarMode((value) => !value)
+                setCarMode(
+                  (value) => !value
+                )
               }
               className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 carMode
@@ -398,25 +654,41 @@ export default function App() {
                   : 'bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300'
               }`}
             >
+
               <Car className="w-3.5 h-3.5" />
-              <span>MODO CARRO</span>
+
+              <span>
+                MODO CARRO
+              </span>
+
             </button>
 
             <button
               onClick={() =>
-                setDarkMode((value) => !value)
+                setDarkMode(
+                  (value) => !value
+                )
               }
               className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors"
-              aria-label="Alterar tema"
+              aria-label={
+                darkMode
+                  ? 'Ativar modo claro'
+                  : 'Ativar modo escuro'
+              }
             >
+
               {darkMode ? (
                 <Sun className="w-4 h-4" />
               ) : (
                 <Moon className="w-4 h-4" />
               )}
+
             </button>
+
           </div>
+
         </div>
+
       </header>
 
       {/* =====================================================
@@ -424,22 +696,32 @@ export default function App() {
           ===================================================== */}
 
       <main className="max-w-4xl mx-auto px-4 pt-6 space-y-6">
+
         {/* ===================================================
             PLAYER
             =================================================== */}
 
         <div
           className={`relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-900/90 to-zinc-950 p-6 sm:p-8 shadow-2xl ${
-            carMode ? 'py-12' : ''
+            carMode
+              ? 'py-12'
+              : ''
           }`}
         >
-          {/* RADIO SELECTOR */}
+
+          {/* =================================================
+              RADIO SELECTOR
+              ================================================= */}
 
           <div className="flex justify-center gap-2 mb-8 flex-wrap">
+
             <button
               onClick={() =>
-                handleSourceChange('circuito')
+                handleSourceChange(
+                  'circuito'
+                )
               }
+              disabled={loading}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 audioSource === 'circuito'
                   ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
@@ -451,8 +733,11 @@ export default function App() {
 
             <button
               onClick={() =>
-                handleSourceChange('marcoense')
+                handleSourceChange(
+                  'marcoense'
+                )
               }
+              disabled={loading}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 audioSource === 'marcoense'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
@@ -461,12 +746,18 @@ export default function App() {
             >
               📻 DIRETO RÁDIO MARCOENSE
             </button>
+
           </div>
 
-          {/* PLAYER CONTENT */}
+          {/* =================================================
+              PLAYER CONTENT
+              ================================================= */}
 
           <div className="flex flex-col items-center text-center space-y-4">
-            {/* RADIO ICON */}
+
+            {/* =================================================
+                CAPA / IMAGEM DA RÁDIO
+                ================================================= */}
 
             <div
               className={`relative rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700/50 flex items-center justify-center shadow-2xl transition-all duration-300 ${
@@ -475,32 +766,56 @@ export default function App() {
                   : 'w-40 h-40'
               }`}
             >
-              <div
-                className={`absolute inset-0 bg-gradient-to-tr ${
-                  audioSource === 'marcoense'
-                    ? 'from-red-600/20'
-                    : 'from-orange-600/20'
-                } to-transparent`}
-              />
 
-              <Radio
-                className={`${
-                  audioSource === 'marcoense'
-                    ? 'text-red-500'
-                    : 'text-orange-500'
-                } ${
-                  carMode
-                    ? 'w-24 h-24'
-                    : 'w-20 h-20'
-                } ${
-                  playing ? 'animate-pulse' : ''
-                }`}
-              />
+              {audioSource === 'circuito' &&
+              nowPlaying?.art ? (
+
+                <img
+                  src={nowPlaying.art}
+                  alt={`${nowPlaying.artist} - ${nowPlaying.title}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+
+              ) : (
+
+                <>
+
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-tr ${
+                      audioSource === 'marcoense'
+                        ? 'from-red-600/20'
+                        : 'from-orange-600/20'
+                    } to-transparent`}
+                  />
+
+                  <Radio
+                    className={`${
+                      audioSource === 'marcoense'
+                        ? 'text-red-500'
+                        : 'text-orange-500'
+                    } ${
+                      carMode
+                        ? 'w-24 h-24'
+                        : 'w-20 h-20'
+                    } ${
+                      playing
+                        ? 'animate-pulse'
+                        : ''
+                    }`}
+                  />
+
+                </>
+
+              )}
+
             </div>
 
-            {/* TITLE */}
+            {/* =================================================
+                TITULO DA RÁDIO
+                ================================================= */}
 
             <div>
+
               <h2 className="text-xl font-bold tracking-tight">
                 {currentRadioTitle}
               </h2>
@@ -508,47 +823,163 @@ export default function App() {
               <p className="text-sm text-zinc-400 mt-1">
                 {currentRadioSubtitle}
               </p>
+
             </div>
 
-            {/* STATUS */}
+            {/* =================================================
+                NOW PLAYING
+                ================================================= */}
+
+            {audioSource === 'circuito' &&
+            nowPlaying && (
+
+              <div className="w-full max-w-md pt-2">
+
+                <div className="rounded-2xl border border-orange-500/20 bg-zinc-900/80 p-4">
+
+                  <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-orange-400 mb-2">
+                    A tocar agora
+                  </div>
+
+                  <div className="text-lg font-bold text-white">
+                    {nowPlaying.artist}
+                  </div>
+
+                  <div className="text-base text-zinc-200 mt-0.5">
+                    {nowPlaying.title}
+                  </div>
+
+                  {nowPlaying.album && (
+
+                    <div className="text-xs text-zinc-500 mt-1">
+                      {nowPlaying.album}
+                    </div>
+
+                  )}
+
+                  {/* -------------------------------------------
+                      TEMPO
+                     ------------------------------------------- */}
+
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-3">
+
+                    <span>
+                      {formatTime(
+                        songElapsed
+                      )}
+                    </span>
+
+                    <span>
+                      {formatTime(
+                        songRemaining
+                      )}
+                    </span>
+
+                  </div>
+
+                  {/* -------------------------------------------
+                      BARRA DE PROGRESSO
+                     ------------------------------------------- */}
+
+                  <div className="w-full h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
+
+                    <div
+                      className="h-full bg-orange-500 transition-all duration-1000"
+                      style={{
+                        width: `${songProgress}%`,
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+                {/* ---------------------------------------------
+                    PRÓXIMA MÚSICA
+                   --------------------------------------------- */}
+
+                {nextSong && (
+
+                  <div className="text-left mt-3 px-1">
+
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-600">
+                      A seguir
+                    </span>
+
+                    <div className="text-xs text-zinc-400 mt-1">
+
+                      <span className="font-semibold text-zinc-300">
+                        {nextSong.artist}
+                      </span>
+
+                      {' — '}
+
+                      {nextSong.title}
+
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
+
+            {/* =================================================
+                ESTADO DA EMISSÃO
+                ================================================= */}
 
             <div className="min-h-[24px]">
+
               {loading && (
+
                 <p className="text-xs text-orange-400 animate-pulse">
                   A ligar à emissão...
                 </p>
+
               )}
 
-              {!loading && error && (
+              {!loading &&
+              error && (
+
                 <p className="text-xs text-red-400">
                   Não foi possível ligar à emissão.
                 </p>
+
               )}
 
               {!loading &&
-                !error &&
-                playing && (
-                  <p
-                    className={`text-xs font-semibold ${
-                      audioSource === 'marcoense'
-                        ? 'text-red-400'
-                        : 'text-orange-400'
-                    }`}
-                  >
-                    ● EM EMISSÃO
-                  </p>
-                )}
+              !error &&
+              playing && (
+
+                <p
+                  className={`text-xs font-semibold ${
+                    audioSource === 'marcoense'
+                      ? 'text-red-400'
+                      : 'text-orange-400'
+                  }`}
+                >
+                  ● EM EMISSÃO
+                </p>
+
+              )}
 
               {!loading &&
-                !error &&
-                !playing && (
-                  <p className="text-xs text-zinc-500">
-                    Emissão parada
-                  </p>
-                )}
+              !error &&
+              !playing && (
+
+                <p className="text-xs text-zinc-500">
+                  Emissão parada
+                </p>
+
+              )}
+
             </div>
 
-            {/* PLAY / PAUSE */}
+            {/* =================================================
+                PLAY / PAUSE
+                ================================================= */}
 
             <button
               onClick={togglePlay}
@@ -564,7 +995,9 @@ export default function App() {
                   : 'w-20 h-20'
               }`}
             >
+
               {playing ? (
+
                 <Pause
                   className={
                     carMode
@@ -572,7 +1005,9 @@ export default function App() {
                       : 'w-8 h-8'
                   }
                 />
+
               ) : (
+
                 <Play
                   className={
                     carMode
@@ -580,13 +1015,19 @@ export default function App() {
                       : 'w-8 h-8 ml-1'
                   }
                 />
+
               )}
+
             </button>
 
-            {/* VOLUME */}
+            {/* =================================================
+                VOLUME
+                ================================================= */}
 
             {!carMode && (
+
               <div className="flex items-center gap-3 w-full max-w-xs pt-4">
+
                 <button
                   onClick={toggleMute}
                   aria-label={
@@ -596,11 +1037,18 @@ export default function App() {
                   }
                   className="text-zinc-400 hover:text-white transition-colors"
                 >
-                  {muted || volume === 0 ? (
+
+                  {muted ||
+                  volume === 0 ? (
+
                     <VolumeX className="w-5 h-5" />
+
                   ) : (
+
                     <Volume2 className="w-5 h-5" />
+
                   )}
+
                 </button>
 
                 <input
@@ -608,14 +1056,24 @@ export default function App() {
                   min="0"
                   max="1"
                   step="0.01"
-                  value={muted ? 0 : volume}
-                  onChange={handleVolumeChange}
+                  value={
+                    muted
+                      ? 0
+                      : volume
+                  }
+                  onChange={
+                    handleVolumeChange
+                  }
                   aria-label="Volume"
                   className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
                 />
+
               </div>
+
             )}
+
           </div>
+
         </div>
 
         {/* ===================================================
@@ -623,38 +1081,54 @@ export default function App() {
             =================================================== */}
 
         <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-6">
+
           <div className="flex items-center justify-between mb-4">
+
             <h3 className="font-bold text-lg flex items-center gap-2">
+
               <Calendar className="w-5 h-5 text-orange-500" />
+
               Programação
+
             </h3>
+
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            {SCHEDULE.map((item) => (
-              <div
-                key={item.id}
-                className="bg-zinc-900/80 border border-zinc-800/60 p-4 rounded-2xl hover:border-zinc-700 transition-all"
-              >
-                <span className="text-xs font-semibold text-orange-400 block mb-1">
-                  {item.day} • {item.time}
-                </span>
 
-                <h4 className="font-bold text-sm mb-1">
-                  {item.title}
-                </h4>
+            {SCHEDULE.map(
+              (item) => (
 
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  {item.description}
-                </p>
-              </div>
-            ))}
+                <div
+                  key={item.id}
+                  className="bg-zinc-900/80 border border-zinc-800/60 p-4 rounded-2xl hover:border-zinc-700 transition-all"
+                >
+
+                  <span className="text-xs font-semibold text-orange-400 block mb-1">
+                    {item.day} • {item.time}
+                  </span>
+
+                  <h4 className="font-bold text-sm mb-1">
+                    {item.title}
+                  </h4>
+
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    {item.description}
+                  </p>
+
+                </div>
+
+              )
+            )}
+
           </div>
+
         </div>
+
       </main>
 
       {/* =====================================================
-          AUDIO ELEMENT
+          AUDIO
           ===================================================== */}
 
       <audio
@@ -663,6 +1137,7 @@ export default function App() {
         playsInline
         crossOrigin="anonymous"
       />
+
     </div>
   );
 }
