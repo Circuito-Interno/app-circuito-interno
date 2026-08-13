@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   TIPOS - NOW PLAYING AZURACAST
+   TIPOS
    ========================================================= */
+
+type AudioSource = 'circuito' | 'marcoense';
 
 interface NowPlayingSong {
   id: string;
@@ -30,12 +32,18 @@ interface NowPlayingData {
     elapsed?: number;
     remaining?: number;
   };
-
   playing_next?: {
     song?: NowPlayingSong;
   };
-
   is_online?: boolean;
+}
+
+interface ScheduleItem {
+  id: string;
+  title: string;
+  day: string;
+  time: string;
+  description: string;
 }
 
 /* =========================================================
@@ -50,26 +58,12 @@ const STREAMS = {
     'https://streaming.shoutcast.com/marcoense-fm',
 } as const;
 
-/* =========================================================
-   AZURACAST NOW PLAYING
-   ========================================================= */
-
 const NOW_PLAYING_URL =
   'https://azuracast.rhoster.pt/api/nowplaying/circuito_interno';
-
-type AudioSource = 'circuito' | 'marcoense';
 
 /* =========================================================
    PROGRAMAÇÃO
    ========================================================= */
-
-interface ScheduleItem {
-  id: string;
-  title: string;
-  day: string;
-  time: string;
-  description: string;
-}
 
 const SCHEDULE: ScheduleItem[] = [
   {
@@ -105,9 +99,9 @@ const SCHEDULE: ScheduleItem[] = [
 export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  /* =========================================================
+  /* =======================================================
      ESTADO DO PLAYER
-     ========================================================= */
+     ======================================================= */
 
   const [playing, setPlaying] = useState(false);
 
@@ -118,17 +112,17 @@ export default function App() {
   const [audioSource, setAudioSource] =
     useState<AudioSource>('circuito');
 
-  const [carMode, setCarMode] = useState(false);
-
-  const [darkMode, setDarkMode] = useState(true);
-
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState(false);
 
-  /* =========================================================
+  const [carMode, setCarMode] = useState(false);
+
+  const [darkMode, setDarkMode] = useState(true);
+
+  /* =======================================================
      NOW PLAYING
-     ========================================================= */
+     ======================================================= */
 
   const [nowPlaying, setNowPlaying] =
     useState<NowPlayingSong | null>(null);
@@ -152,36 +146,20 @@ export default function App() {
     audio.volume = volume;
     audio.muted = muted;
 
-    /* ---------------------------------------------------------
-       PLAY
-       --------------------------------------------------------- */
-
     const handlePlay = () => {
       setPlaying(true);
       setLoading(false);
       setError(false);
     };
 
-    /* ---------------------------------------------------------
-       PAUSE
-       --------------------------------------------------------- */
-
     const handlePause = () => {
       setPlaying(false);
       setLoading(false);
     };
 
-    /* ---------------------------------------------------------
-       WAITING
-       --------------------------------------------------------- */
-
     const handleWaiting = () => {
       setLoading(true);
     };
-
-    /* ---------------------------------------------------------
-       PLAYING
-       --------------------------------------------------------- */
 
     const handlePlaying = () => {
       setPlaying(true);
@@ -189,22 +167,15 @@ export default function App() {
       setError(false);
     };
 
-    /* ---------------------------------------------------------
-       ERROR
-       --------------------------------------------------------- */
-
     const handleError = () => {
       setPlaying(false);
       setLoading(false);
       setError(true);
     };
 
-    /* ---------------------------------------------------------
-       ENDED
-       --------------------------------------------------------- */
-
     const handleEnded = () => {
       setPlaying(false);
+      setLoading(false);
     };
 
     audio.addEventListener('play', handlePlay);
@@ -213,10 +184,6 @@ export default function App() {
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('error', handleError);
     audio.addEventListener('ended', handleEnded);
-
-    /* ---------------------------------------------------------
-       CLEANUP
-       --------------------------------------------------------- */
 
     return () => {
       audio.removeEventListener('play', handlePlay);
@@ -229,7 +196,7 @@ export default function App() {
   }, [volume, muted]);
 
   /* =========================================================
-     VOLUME / MUTE
+     ATUALIZAR VOLUME / MUTE
      ========================================================= */
 
   useEffect(() => {
@@ -242,12 +209,13 @@ export default function App() {
   }, [volume, muted]);
 
   /* =========================================================
-     NOW PLAYING - AZURACAST
+     NOW PLAYING — AZURACAST
      ========================================================= */
 
   useEffect(() => {
     /*
-     * Só precisamos do Now Playing para o Circuito Interno.
+     * O AzuraCast só é consultado quando
+     * estamos na Rádio Circuito Interno.
      */
 
     if (audioSource !== 'circuito') {
@@ -260,10 +228,6 @@ export default function App() {
     }
 
     let cancelled = false;
-
-    /* ---------------------------------------------------------
-       FUNÇÃO PARA OBTER DADOS DO AZURACAST
-       --------------------------------------------------------- */
 
     const fetchNowPlaying = async () => {
       try {
@@ -285,27 +249,13 @@ export default function App() {
 
         if (cancelled) return;
 
-        /* -----------------------------------------------------
-           MÚSICA ATUAL
-           ----------------------------------------------------- */
+        setNowPlaying(
+          data.now_playing?.song ?? null
+        );
 
-        const currentSong =
-          data.now_playing?.song ?? null;
-
-        /* -----------------------------------------------------
-           PRÓXIMA MÚSICA
-           ----------------------------------------------------- */
-
-        const upcomingSong =
-          data.playing_next?.song ?? null;
-
-        /* -----------------------------------------------------
-           ATUALIZAR ESTADO
-           ----------------------------------------------------- */
-
-        setNowPlaying(currentSong);
-
-        setNextSong(upcomingSong);
+        setNextSong(
+          data.playing_next?.song ?? null
+        );
 
         setSongElapsed(
           data.now_playing?.elapsed ?? 0
@@ -322,24 +272,20 @@ export default function App() {
       }
     };
 
-    /* ---------------------------------------------------------
-       PRIMEIRA CONSULTA IMEDIATA
-       --------------------------------------------------------- */
+    /*
+     * Obter imediatamente.
+     */
 
     fetchNowPlaying();
 
-    /* ---------------------------------------------------------
-       ATUALIZAR A CADA 10 SEGUNDOS
-       --------------------------------------------------------- */
+    /*
+     * Atualizar a cada 10 segundos.
+     */
 
     const interval = window.setInterval(
       fetchNowPlaying,
       10000
     );
-
-    /* ---------------------------------------------------------
-       CLEANUP
-       --------------------------------------------------------- */
 
     return () => {
       cancelled = true;
@@ -348,14 +294,10 @@ export default function App() {
   }, [audioSource]);
 
   /* =========================================================
-     CONTADOR LOCAL DA MÚSICA
+     CONTADOR LOCAL
      ========================================================= */
 
   useEffect(() => {
-    /*
-     * Só contamos quando o Circuito Interno está a tocar.
-     */
-
     if (
       !playing ||
       audioSource !== 'circuito'
@@ -377,7 +319,7 @@ export default function App() {
   }, [playing, audioSource]);
 
   /* =========================================================
-     TOCAR / MUDAR DE RÁDIO
+     PLAY / MUDAR DE RÁDIO
      ========================================================= */
 
   const playSource = async (
@@ -392,14 +334,11 @@ export default function App() {
 
     try {
       /*
-       * Se estamos na mesma rádio,
-       * apenas alternamos Play / Pause.
+       * Se já estamos nesta rádio,
+       * simplesmente fazemos Play/Pause.
        */
 
-      if (
-        audioSource === source &&
-        audio.src === STREAMS[source]
-      ) {
+      if (audioSource === source) {
         if (audio.paused) {
           await audio.play();
         } else {
@@ -409,9 +348,9 @@ export default function App() {
         return;
       }
 
-      /* -------------------------------------------------------
-         PARAR COMPLETAMENTE O STREAM ANTERIOR
-         ------------------------------------------------------- */
+      /*
+       * Parar o stream anterior.
+       */
 
       audio.pause();
 
@@ -421,15 +360,15 @@ export default function App() {
 
       setPlaying(false);
 
-      /* -------------------------------------------------------
-         ALTERAR RÁDIO
-         ------------------------------------------------------- */
+      /*
+       * Alterar rádio selecionada.
+       */
 
       setAudioSource(source);
 
-      /* -------------------------------------------------------
-         CARREGAR NOVO STREAM
-         ------------------------------------------------------- */
+      /*
+       * Carregar novo stream.
+       */
 
       audio.src = STREAMS[source];
 
@@ -439,9 +378,9 @@ export default function App() {
 
       audio.muted = muted;
 
-      /* -------------------------------------------------------
-         INICIAR REPRODUÇÃO
-         ------------------------------------------------------- */
+      /*
+       * Começar emissão.
+       */
 
       await audio.play();
 
@@ -463,7 +402,7 @@ export default function App() {
   };
 
   /* =========================================================
-     PLAY / PAUSE
+     BOTÃO PRINCIPAL PLAY / PAUSE
      ========================================================= */
 
   const togglePlay = async () => {
@@ -472,7 +411,7 @@ export default function App() {
     if (!audio) return;
 
     /*
-     * Se está a tocar, pausa.
+     * Se está a tocar → PAUSE.
      */
 
     if (!audio.paused) {
@@ -481,20 +420,22 @@ export default function App() {
     }
 
     /*
-     * Caso contrário inicia a rádio selecionada.
+     * Se está parado → PLAY.
      */
 
     await playSource(audioSource);
   };
 
   /* =========================================================
-     VOLUME
+     ALTERAR VOLUME
      ========================================================= */
 
   const handleVolumeChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const value = Number(e.target.value);
+    const value = Number(
+      e.target.value
+    );
 
     setVolume(value);
 
@@ -503,11 +444,6 @@ export default function App() {
     if (!audio) return;
 
     audio.volume = value;
-
-    /*
-     * Se o volume for superior a zero,
-     * retiramos o mute.
-     */
 
     if (value > 0) {
       audio.muted = false;
@@ -541,6 +477,16 @@ export default function App() {
   const handleSourceChange = async (
     source: AudioSource
   ) => {
+    /*
+     * Se estamos a clicar na rádio
+     * que já está selecionada,
+     * não fazemos nada.
+     */
+
+    if (source === audioSource) {
+      return;
+    }
+
     await playSource(source);
   };
 
@@ -583,17 +529,19 @@ export default function App() {
   };
 
   /* =========================================================
-     PROGRESSO DA MÚSICA
+     PROGRESSO
      ========================================================= */
 
-  const totalSongTime =
+  const totalDuration =
     songElapsed + songRemaining;
 
-  const songProgress =
-    totalSongTime > 0
+  const progress =
+    totalDuration > 0
       ? Math.min(
           100,
-          (songElapsed / totalSongTime) * 100
+          (songElapsed /
+            totalDuration) *
+            100
         )
       : 0;
 
@@ -657,9 +605,7 @@ export default function App() {
 
               <Car className="w-3.5 h-3.5" />
 
-              <span>
-                MODO CARRO
-              </span>
+              <span>MODO CARRO</span>
 
             </button>
 
@@ -670,11 +616,6 @@ export default function App() {
                 )
               }
               className="p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 transition-colors"
-              aria-label={
-                darkMode
-                  ? 'Ativar modo claro'
-                  : 'Ativar modo escuro'
-              }
             >
 
               {darkMode ? (
@@ -710,7 +651,7 @@ export default function App() {
         >
 
           {/* =================================================
-              RADIO SELECTOR
+              SELEÇÃO DE RÁDIO
               ================================================= */}
 
           <div className="flex justify-center gap-2 mb-8 flex-wrap">
@@ -721,14 +662,14 @@ export default function App() {
                   'circuito'
                 )
               }
-              disabled={loading}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                audioSource === 'circuito'
+                audioSource ===
+                'circuito'
                   ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
                   : 'bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400'
               }`}
             >
-              RÁDIO 24/7
+              RÁDIO CIRCUITO INTERNO - DIRETO
             </button>
 
             <button
@@ -737,14 +678,14 @@ export default function App() {
                   'marcoense'
                 )
               }
-              disabled={loading}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                audioSource === 'marcoense'
+                audioSource ===
+                'marcoense'
                   ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
                   : 'bg-zinc-800/50 hover:bg-zinc-800 text-zinc-400'
               }`}
             >
-              📻 DIRETO RÁDIO MARCOENSE
+              RÁDIO MARCOENSE - DIRETO
             </button>
 
           </div>
@@ -756,7 +697,7 @@ export default function App() {
           <div className="flex flex-col items-center text-center space-y-4">
 
             {/* =================================================
-                CAPA / IMAGEM DA RÁDIO
+                CAPA / ÍCONE
                 ================================================= */}
 
             <div
@@ -767,7 +708,8 @@ export default function App() {
               }`}
             >
 
-              {audioSource === 'circuito' &&
+              {audioSource ===
+                'circuito' &&
               nowPlaying?.art ? (
 
                 <img
@@ -782,7 +724,8 @@ export default function App() {
 
                   <div
                     className={`absolute inset-0 bg-gradient-to-tr ${
-                      audioSource === 'marcoense'
+                      audioSource ===
+                      'marcoense'
                         ? 'from-red-600/20'
                         : 'from-orange-600/20'
                     } to-transparent`}
@@ -790,7 +733,8 @@ export default function App() {
 
                   <Radio
                     className={`${
-                      audioSource === 'marcoense'
+                      audioSource ===
+                      'marcoense'
                         ? 'text-red-500'
                         : 'text-orange-500'
                     } ${
@@ -811,7 +755,7 @@ export default function App() {
             </div>
 
             {/* =================================================
-                TITULO DA RÁDIO
+                NOME DA RÁDIO
                 ================================================= */}
 
             <div>
@@ -830,7 +774,8 @@ export default function App() {
                 NOW PLAYING
                 ================================================= */}
 
-            {audioSource === 'circuito' &&
+            {audioSource ===
+              'circuito' &&
             nowPlaying && (
 
               <div className="w-full max-w-md pt-2">
@@ -838,7 +783,7 @@ export default function App() {
                 <div className="rounded-2xl border border-orange-500/20 bg-zinc-900/80 p-4">
 
                   <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-orange-400 mb-2">
-                    A tocar agora
+                    A TOCAR AGORA
                   </div>
 
                   <div className="text-lg font-bold text-white">
@@ -857,9 +802,7 @@ export default function App() {
 
                   )}
 
-                  {/* -------------------------------------------
-                      TEMPO
-                     ------------------------------------------- */}
+                  {/* TEMPO */}
 
                   <div className="flex items-center justify-between text-[11px] text-zinc-500 mt-3">
 
@@ -870,6 +813,7 @@ export default function App() {
                     </span>
 
                     <span>
+                      -
                       {formatTime(
                         songRemaining
                       )}
@@ -877,16 +821,14 @@ export default function App() {
 
                   </div>
 
-                  {/* -------------------------------------------
-                      BARRA DE PROGRESSO
-                     ------------------------------------------- */}
+                  {/* BARRA */}
 
                   <div className="w-full h-1 bg-zinc-800 rounded-full mt-1 overflow-hidden">
 
                     <div
                       className="h-full bg-orange-500 transition-all duration-1000"
                       style={{
-                        width: `${songProgress}%`,
+                        width: `${progress}%`,
                       }}
                     />
 
@@ -894,16 +836,14 @@ export default function App() {
 
                 </div>
 
-                {/* ---------------------------------------------
-                    PRÓXIMA MÚSICA
-                   --------------------------------------------- */}
+                {/* A SEGUIR */}
 
                 {nextSong && (
 
                   <div className="text-left mt-3 px-1">
 
                     <span className="text-[10px] uppercase tracking-wider text-zinc-600">
-                      A seguir
+                      A SEGUIR
                     </span>
 
                     <div className="text-xs text-zinc-400 mt-1">
@@ -927,7 +867,7 @@ export default function App() {
             )}
 
             {/* =================================================
-                ESTADO DA EMISSÃO
+                ESTADO
                 ================================================= */}
 
             <div className="min-h-[24px]">
@@ -941,39 +881,40 @@ export default function App() {
               )}
 
               {!loading &&
-              error && (
+                error && (
 
-                <p className="text-xs text-red-400">
-                  Não foi possível ligar à emissão.
-                </p>
+                  <p className="text-xs text-red-400">
+                    Não foi possível ligar à emissão.
+                  </p>
 
-              )}
-
-              {!loading &&
-              !error &&
-              playing && (
-
-                <p
-                  className={`text-xs font-semibold ${
-                    audioSource === 'marcoense'
-                      ? 'text-red-400'
-                      : 'text-orange-400'
-                  }`}
-                >
-                  ● EM EMISSÃO
-                </p>
-
-              )}
+                )}
 
               {!loading &&
-              !error &&
-              !playing && (
+                !error &&
+                playing && (
 
-                <p className="text-xs text-zinc-500">
-                  Emissão parada
-                </p>
+                  <p
+                    className={`text-xs font-semibold ${
+                      audioSource ===
+                      'marcoense'
+                        ? 'text-red-400'
+                        : 'text-orange-400'
+                    }`}
+                  >
+                    ● EM EMISSÃO
+                  </p>
 
-              )}
+                )}
+
+              {!loading &&
+                !error &&
+                !playing && (
+
+                  <p className="text-xs text-zinc-500">
+                    Emissão parada
+                  </p>
+
+                )}
 
             </div>
 
@@ -1135,7 +1076,6 @@ export default function App() {
         ref={audioRef}
         preload="none"
         playsInline
-        crossOrigin="anonymous"
       />
 
     </div>
