@@ -5,6 +5,7 @@ import https from 'https';
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const { source } = req.query;
 
+  // URLs nativas dos streams
   const targetUrl =
     source === 'marcoense'
       ? 'http://stream.mfradio.pt:8002/stream'
@@ -12,7 +13,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
   const client = targetUrl.startsWith('https') ? https : http;
 
-  // Cabeçalhos para o Safari iOS manter o áudio em segundo plano e em alta qualidade
+  // Cabeçalhos HTTP para transmissão nativa e suporte de background audio no iOS Safari
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'audio/mpeg');
   res.setHeader('Accept-Ranges', 'bytes');
@@ -20,6 +21,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Connection', 'keep-alive');
 
   const request = client.get(targetUrl, (stream) => {
+    // Pipe direto sem re-compressão de áudio (Qualidade HD 128/192kbps)
     stream.pipe(res);
   });
 
