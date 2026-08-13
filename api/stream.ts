@@ -1,29 +1,37 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import https from 'https';
-import http from 'http';
+export const config = {
+  runtime: 'edge',
+};
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
-  const { source } = req.query;
+export default async function handler(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const source = searchParams.get('source');
 
   const targetUrl =
     source === 'marcoense'
       ? 'http://stream.dominioglobal.pt:8024/stream'
       : 'https://rhoster.pt/listen/circuito_interno/radio.mp3';
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Content-Type', 'audio/mpeg');
-
-  const client = targetUrl.startsWith('https') ? https : http;
-
-  client.get(targetUrl, (streamRes) => {
-    res.writeHead(streamRes.statusCode || 200, {
-      'Content-Type': 'audio/mpeg',
-      'Cache-Control': 'no-cache, no-store',
+  try {
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'audio/mpeg, audio/*',
+      },
     });
-    streamRes.pipe(res);
-  }).on('error', () => {
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Erro ao ligar à emissora' });
+
+    if (!response.ok || !response.body) {
+      return new Response('Erro ao aceder à rádio', { status: 500 });
     }
-  });
+
+    return new Response(response.body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'audio/mpeg',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
+  } catch (error) {
+    return new Response('Erro na ligação', { status: 500 });
+  }
 }

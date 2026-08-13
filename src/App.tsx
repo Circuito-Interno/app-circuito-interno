@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 /* =========================================================
-   ENDPOINTS VIA PROXY VERCEL (Para evitar bloqueios Mixed Content)
+   ENDPOINTS VIA EDGE PROXY VERCEL
    ========================================================= */
 
 const STREAM_CIRCUITO = '/api/stream?source=circuito';
@@ -253,7 +253,7 @@ export default function App() {
 
       const targetUrl =
         targetSource === 'marcoense'
-          ? STREAM_MARCOENSE
+          ? `${STREAM_MARCOENSE}&t=${Date.now()}`
           : `${STREAM_CIRCUITO}&t=${Date.now()}`;
 
       audio.src = targetUrl;
