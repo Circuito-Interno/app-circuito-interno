@@ -15,14 +15,9 @@ import {
   Car,
   Moon,
   Sun,
-  Dumbbell,
-  Store,
-  Coffee,
-  Utensils,
-  Wine,
-  Building2,
   ArrowLeft,
   ChevronRight,
+  MessageCircle,
 } from 'lucide-react';
 
 /* =========================================================
@@ -34,14 +29,12 @@ type AudioSource =
   | 'marcoense';
 
 type PlayerMode =
-  | 'radio'
-  | 'ginasio';
+  | 'radio';
 
 type AppSection =
   | 'home'
   | 'circuito'
-  | 'marcoense'
-  | 'ambientes';
+  | 'marcoense';
 
 interface NowPlayingSong {
   id: string;
@@ -72,15 +65,28 @@ interface ScheduleItem {
   description: string;
 }
 
-interface Ambiente {
+interface NewsItem {
   id: string;
   title: string;
-  description: string;
-  image: string;
-  icon: React.ComponentType<{
-    className?: string;
-  }>;
+  link: string;
+  source: string;
+  publishedAt: string;
+  category: 'Portugal' | 'Mundo';
 }
+
+function cleanNewsTitle(title: string): string {
+  return title
+    .replace(/([a-záéíóúàâêôãõç])([A-ZÁÉÍÓÚÀÂÊÔÃÕÇ])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+
+/* =========================================================
+   RADAR MUSICAL — TICKER
+   ========================================================= */
+
+
 
 /* =========================================================
    STREAMS
@@ -90,8 +96,13 @@ const STREAMS: Record<AudioSource, string> = {
   circuito:
     'https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3',
 
+  /*
+   * Rádio Marcoense
+   *
+   * Stream HTTP direto do servidor.
+   */
   marcoense:
-    'http://137.74.160.250:8000/stream',
+    'https://shiny-fire-6999.marcoense-relay.workers.dev/stream',
 };
 
 const NOW_PLAYING_URL =
@@ -129,103 +140,6 @@ const SCHEDULE: ScheduleItem[] = [
 ];
 
 /* =========================================================
-   AMBIENTES
-   ========================================================= */
-
-const AMBIENTES: Ambiente[] = [
-  {
-    id: 'ginasio',
-    title: 'Ginásio',
-    description:
-      'Energia, ritmo e motivação para acompanhar o treino.',
-    image:
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=900&q=85',
-    icon: Dumbbell,
-  },
-  {
-    id: 'loja',
-    title: 'Loja',
-    description:
-      'Uma seleção moderna para criar uma experiência agradável de compra.',
-    image:
-      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=85',
-    icon: Store,
-  },
-  {
-    id: 'cafe',
-    title: 'Café',
-    description:
-      'Música descontraída para acompanhar conversas e momentos de pausa.',
-    image:
-      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=85',
-    icon: Coffee,
-  },
-  {
-    id: 'restaurante',
-    title: 'Restaurante',
-    description:
-      'Ambiente musical elegante e equilibrado para acompanhar a refeição.',
-    image:
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=85',
-    icon: Utensils,
-  },
-  {
-    id: 'bar',
-    title: 'Bar',
-    description:
-      'Sons modernos e envolventes para criar o ambiente certo à noite.',
-    image:
-      'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=85',
-    icon: Wine,
-  },
-  {
-    id: 'hotel',
-    title: 'Hotel',
-    description:
-      'Música sofisticada para espaços de receção, lobby e áreas comuns.',
-    image:
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=85',
-    icon: Building2,
-  },
-];
-
-/* =========================================================
-   PLAYLIST — GINÁSIO
-   ========================================================= */
-
-const GINASIO_TRACKS = [
-  '/ambientes/Ginásio/Alice DJ - Better Off Alone.mp3',
-  '/ambientes/Ginásio/Amber - This is Your Night.mp3',
-  '/ambientes/Ginásio/Bon Jovi - You Give Love A Bad Name.mp3',
-  '/ambientes/Ginásio/DJ Sammy - Heaven.mp3',
-  '/ambientes/Ginásio/Don Henley - The Boys Of Summer.mp3',
-  '/ambientes/Ginásio/Donna Lewis - I Love You Always Forever (Edit).mp3',
-  '/ambientes/Ginásio/Eurythmics, Annie Lennox e Dave Stewart - Sweet Dreams (Are Made Of This).mp3',
-  '/ambientes/Ginásio/Everything But The Girl - Missing.mp3',
-  '/ambientes/Ginásio/Fine Young Cannibals - She Drives Me Crazy.mp3',
-  '/ambientes/Ginásio/Haddaway - What Is Love.mp3',
-  '/ambientes/Ginásio/Janet Jackson - Together Again.mp3',
-  '/ambientes/Ginásio/Jennifer Paige - Crush.mp3',
-  '/ambientes/Ginásio/Kim Carnes - Bette Davis Eyes.mp3',
-  '/ambientes/Ginásio/Madonna - Into the Groove (Edit).mp3',
-  '/ambientes/Ginásio/Mark Morrison - Return of the Mack.mp3',
-  '/ambientes/Ginásio/Michael Sembello - Maniac (From Flashdance).mp3',
-  '/ambientes/Ginásio/Missing Persons - Bette Davis Eyes.mp3',
-  '/ambientes/Ginásio/Prince & The Revolution - Kiss.mp3',
-  "/ambientes/Ginásio/Simple Minds - Don't You (Forget About Me).mp3",
-  '/ambientes/Ginásio/Soft Cell - Tainted Love.mp3',
-  '/ambientes/Ginásio/TLC - No Scrubs.mp3',
-  '/ambientes/Ginásio/Tears For Fears - Everybody Wants To Rule The World.mp3',
-  '/ambientes/Ginásio/Technotronic - Pump Up The Jam.mp3',
-  "/ambientes/Ginásio/The Human League - Don't You Want Me.mp3",
-  "/ambientes/Ginásio/Tina Turner - What's Love Got To Do With It.mp3",
-  '/ambientes/Ginásio/Toto - Africa.mp3',
-  '/ambientes/Ginásio/Van Halen - Jump.mp3',
-  '/ambientes/Ginásio/Whitney Houston - I Wanna Dance With Somebody.mp3',
-  '/ambientes/Ginásio/a-ha - Take On Me.mp3',
-];
-
-/* =========================================================
    APP
    ========================================================= */
 
@@ -234,8 +148,8 @@ export default function App() {
     useRef<HTMLAudioElement | null>(null);
 
   /*
-   * Ref para evitar problemas com closures antigas
-   * nos listeners do elemento audio.
+   * Refs para evitar closures antigas nos
+   * listeners do elemento <audio>.
    */
   const playerModeRef =
     useRef<PlayerMode>('radio');
@@ -243,22 +157,23 @@ export default function App() {
   const audioSourceRef =
     useRef<AudioSource>('circuito');
 
-  const ginasioTrackIndexRef =
-    useRef(0);
+  const volumeRef =
+    useRef(0.8);
+
+  const mutedRef =
+    useRef(false);
 
   /*
    * Reconexão automática da Rádio Marcoense.
-   * Só fica ativa enquanto o utilizador pretende
-   * continuar a ouvir a rádio.
    */
   const radioReconnectTimerRef =
-  useRef<number | null>(null);
+    useRef<number | null>(null);
 
-const radioReconnectWantedRef =
-  useRef(false);
+  const radioReconnectWantedRef =
+    useRef(false);
 
-const radioReconnectAttemptRef =
-  useRef(0);
+  const radioReconnectAttemptRef =
+    useRef(0);
 
   /* =======================================================
      NAVEGAÇÃO
@@ -289,9 +204,6 @@ const radioReconnectAttemptRef =
   /* =======================================================
      GINÁSIO
      ======================================================= */
-
-  const [ginasioTrackIndex, setGinasioTrackIndex] =
-    useState(0);
 
   /* =======================================================
      UI PLAYER
@@ -326,6 +238,14 @@ const radioReconnectAttemptRef =
     useState(0);
 
   /* =========================================================
+     RADAR MUSICAL
+     ========================================================= */
+
+  const [newsItems, setNewsItems] =
+    useState<NewsItem[]>([]);
+
+
+  /* =========================================================
      SINCRONIZAR REFS
      ========================================================= */
 
@@ -340,12 +260,96 @@ const radioReconnectAttemptRef =
   }, [audioSource]);
 
   useEffect(() => {
-    ginasioTrackIndexRef.current =
-      ginasioTrackIndex;
-  }, [ginasioTrackIndex]);
+    volumeRef.current =
+      volume;
+  }, [volume]);
+
+  useEffect(() => {
+    mutedRef.current =
+      muted;
+  }, [muted]);
 
   /* =========================================================
-     AUDIO — CONFIGURAÇÃO
+     RADAR MUSICAL — CARREGAR NOTÍCIAS
+     ========================================================= */
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadNews = async () => {
+      try {
+        const response =
+          await fetch('/api/news');
+
+        if (!response.ok) {
+          throw new Error(
+            `HTTP ${response.status}`
+          );
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          !cancelled &&
+          Array.isArray(data.items)
+        ) {
+          setNewsItems(
+            data.items
+          );
+        }
+      } catch (error) {
+        console.error(
+          'Erro ao carregar Radar Musical:',
+          error
+        );
+      } finally {
+      }
+    };
+
+    loadNews();
+
+    const interval =
+      window.setInterval(
+        loadNews,
+        5 * 60 * 1000
+      );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(
+        interval
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     CANCELAR RECONEXÃO
+     ========================================================= */
+
+  const cancelRadioReconnect =
+    useCallback(() => {
+      radioReconnectWantedRef.current =
+        false;
+
+      radioReconnectAttemptRef.current =
+        0;
+
+      if (
+        radioReconnectTimerRef.current !==
+        null
+      ) {
+        window.clearTimeout(
+          radioReconnectTimerRef.current
+        );
+
+        radioReconnectTimerRef.current =
+          null;
+      }
+    }, []);
+
+  /* =========================================================
+     AUDIO — CONFIGURAÇÃO E LISTENERS
      ========================================================= */
 
   useEffect(() => {
@@ -354,32 +358,21 @@ const radioReconnectAttemptRef =
 
     if (!audio) return;
 
-    audio.volume = volume;
-    audio.muted = muted;
+    audio.volume =
+      volumeRef.current;
+
+    audio.muted =
+      mutedRef.current;
 
     const handlePlay = () => {
       setPlaying(true);
       setLoading(false);
       setError(false);
-
-      if (
-        playerModeRef.current ===
-        'ginasio'
-      ) {
-
-      }
     };
 
     const handlePause = () => {
       setPlaying(false);
       setLoading(false);
-
-      if (
-        playerModeRef.current ===
-        'ginasio'
-      ) {
-
-      }
     };
 
     const handleWaiting = () => {
@@ -387,218 +380,46 @@ const radioReconnectAttemptRef =
     };
 
     const handlePlaying = () => {
-  /*
-   * A emissão voltou.
-   * Cancelar qualquer tentativa de
-   * reconexão que ainda esteja pendente.
-   */
-  if (
-    radioReconnectTimerRef.current !==
-    null
-  ) {
-    window.clearTimeout(
-      radioReconnectTimerRef.current
-    );
+      /*
+       * A emissão voltou.
+       */
+      if (
+        radioReconnectTimerRef.current !==
+        null
+      ) {
+        window.clearTimeout(
+          radioReconnectTimerRef.current
+        );
 
-    radioReconnectTimerRef.current =
-      null;
-  }
-
-  /*
-   * A ligação foi recuperada.
-   * Reiniciar o contador de tentativas.
-   */
-  radioReconnectAttemptRef.current = 0;
-
-  setPlaying(true);
-  setLoading(false);
-  setError(false);
-
-  if (
-    playerModeRef.current ===
-    'ginasio'
-  ) {
-
-  }
-};
-
-    const handleError = () => {
-  /*
-   * Só tentar reconectar automaticamente
-   * à Rádio Marcoense.
-   */
-  if (
-    playerModeRef.current ===
-      'radio' &&
-    audioSourceRef.current ===
-      'marcoense' &&
-    radioReconnectWantedRef.current
-  ) {
-    setPlaying(false);
-    setLoading(true);
-    setError(false);
-
-    /*
-     * Se já existe uma tentativa agendada,
-     * não criar outra.
-     */
-    if (
-      radioReconnectTimerRef.current !==
-      null
-    ) {
-      return;
-    }
-
-    /*
-     * Incrementar tentativa.
-     */
-    radioReconnectAttemptRef.current +=
-      1;
-
-    const attempt =
-      radioReconnectAttemptRef.current;
-
-    /*
-     * Intervalo progressivo:
-     *
-     * 1ª tentativa  = 2s
-     * 2ª tentativa  = 4s
-     * 3ª tentativa  = 6s
-     * 4ª tentativa  = 10s
-     * seguintes     = 15s
-     */
-    let delay = 15000;
-
-    if (attempt === 1) {
-      delay = 2000;
-    } else if (attempt === 2) {
-      delay = 4000;
-    } else if (attempt === 3) {
-      delay = 6000;
-    } else if (attempt === 4) {
-      delay = 10000;
-    }
-
-    console.warn(
-      `Rádio Marcoense: falha no stream. Nova tentativa em ${delay / 1000}s (tentativa ${attempt}).`
-    );
-
-    radioReconnectTimerRef.current =
-      window.setTimeout(() => {
         radioReconnectTimerRef.current =
           null;
+      }
 
-        const currentAudio =
-          audioRef.current;
+      radioReconnectAttemptRef.current =
+        0;
 
-        /*
-         * Confirmar novamente que o utilizador
-         * ainda pretende ouvir a Rádio Marcoense.
-         */
-        if (
-          !currentAudio ||
-          playerModeRef.current !==
-            'radio' ||
-          audioSourceRef.current !==
-            'marcoense' ||
-          !radioReconnectWantedRef.current
-        ) {
-          return;
-        }
+      setPlaying(true);
+      setLoading(false);
+      setError(false);
+    };
 
-        const sourceUrl =
-          STREAMS.marcoense;
+    const handleError = () => {
+      /*
+       * Erro normal do elemento de áudio.
+       *
+       * Não fazemos proxy nem reconexão automática.
+       * Os streams de rádio devem ser reproduzidos
+       * diretamente pela origem.
+       */
+      setPlaying(false);
+      setLoading(false);
+      setError(true);
+    };
 
-        try {
-          /*
-           * Limpar completamente a ligação
-           * anterior antes de tentar novamente.
-           */
-          currentAudio.pause();
-
-          currentAudio.removeAttribute(
-            'src'
-          );
-
-          currentAudio.load();
-
-          /*
-           * Reabrir o stream.
-           */
-          currentAudio.src =
-            sourceUrl;
-
-          currentAudio.preload =
-            'none';
-
-          currentAudio.volume =
-            volume;
-
-          currentAudio.muted =
-            muted;
-
-          currentAudio.load();
-
-          /*
-           * O play() pode falhar se o servidor
-           * continuar indisponível.
-           *
-           * Nesse caso o erro será tratado
-           * novamente pelo listener "error".
-           */
-          void currentAudio
-            .play()
-            .catch(
-              (err) => {
-                console.warn(
-                  'Rádio Marcoense: tentativa de reconexão falhou:',
-                  err
-                );
-
-                /*
-                 * Se o evento "error" não for
-                 * disparado pelo browser, agendar
-                 * explicitamente uma nova tentativa.
-                 */
-                if (
-                  playerModeRef.current ===
-                    'radio' &&
-                  audioSourceRef.current ===
-                    'marcoense' &&
-                  radioReconnectWantedRef.current &&
-                  radioReconnectTimerRef.current ===
-                    null
-                ) {
-                  handleError();
-                }
-              }
-            );
-        } catch (err) {
-          console.error(
-            'Erro na reconexão automática da Rádio Marcoense:',
-            err
-          );
-
-          /*
-           * Continuar o ciclo de reconexão.
-           */
-          if (
-            playerModeRef.current ===
-              'radio' &&
-            audioSourceRef.current ===
-              'marcoense' &&
-            radioReconnectWantedRef.current
-          ) {
-            handleError();
-          }
-        }
-      }, delay);
-  } else {
-    setPlaying(false);
-    setLoading(false);
-    setError(true);
-  }
-};
+    audio.addEventListener(
+      'play',
+      handlePlay
+    );
 
     audio.addEventListener(
       'pause',
@@ -658,9 +479,15 @@ const radioReconnectAttemptRef =
 
     if (!audio) return;
 
-    audio.volume = volume;
-    audio.muted = muted;
-  }, [volume, muted]);
+    audio.volume =
+      volume;
+
+    audio.muted =
+      muted;
+  }, [
+    volume,
+    muted,
+  ]);
 
   /* =========================================================
      NOW PLAYING — AZURACAST
@@ -679,7 +506,8 @@ const radioReconnectAttemptRef =
       return;
     }
 
-    let cancelled = false;
+    let cancelled =
+      false;
 
     const fetchNowPlaying =
       async () => {
@@ -766,19 +594,22 @@ const radioReconnectAttemptRef =
     }
 
     const interval =
-      window.setInterval(() => {
-        setSongElapsed(
-          (value) =>
-            value + 1
-        );
+      window.setInterval(
+        () => {
+          setSongElapsed(
+            (value) =>
+              value + 1
+          );
 
-        setSongRemaining(
-          (value) =>
-            value > 0
-              ? value - 1
-              : 0
-        );
-      }, 1000);
+          setSongRemaining(
+            (value) =>
+              value > 0
+                ? value - 1
+                : 0
+          );
+        },
+        1000
+      );
 
     return () => {
       window.clearInterval(
@@ -789,172 +620,6 @@ const radioReconnectAttemptRef =
     playing,
     playerMode,
     audioSource,
-  ]);
-
-  /* =========================================================
-     PLAYLIST — GINÁSIO
-     ========================================================= */
-
-  const playGinasioTrack =
-    useCallback(
-      async (index: number) => {
-        const audio =
-          audioRef.current;
-
-        if (!audio) return;
-
-        const safeIndex =
-          ((index %
-            GINASIO_TRACKS.length) +
-            GINASIO_TRACKS.length) %
-          GINASIO_TRACKS.length;
-
-        const track =
-          GINASIO_TRACKS[
-            safeIndex
-          ];
-
-        setLoading(true);
-        setError(false);
-
-        try {
-          /*
-           * Este áudio passa agora a ser
-           * explicitamente do modo Ginásio.
-           */
-          playerModeRef.current =
-            'ginasio';
-
-          setPlayerMode(
-            'ginasio'
-          );
-
-          /*
-           * Parar o áudio anterior.
-           */
-          audio.pause();
-
-          audio.removeAttribute(
-            'src'
-          );
-
-          audio.load();
-
-          /*
-           * Atualizar índice.
-           */
-          ginasioTrackIndexRef.current =
-            safeIndex;
-
-          setGinasioTrackIndex(
-            safeIndex
-          );
-
-          /*
-           * encodeURI trata espaços e acentos
-           * existentes nos nomes dos ficheiros.
-           */
-          audio.src =
-            encodeURI(track);
-
-          audio.preload =
-            'metadata';
-
-          audio.volume =
-            volume;
-
-          audio.muted =
-            muted;
-
-          audio.load();
-
-          await audio.play();
-
-          setPlaying(true);
-
-          setLoading(false);
-          setError(false);
-        } catch (err) {
-          console.error(
-            'Erro ao iniciar música do Ginásio:',
-            err
-          );
-
-          setPlaying(false);
-
-          setLoading(false);
-          setError(true);
-        }
-      },
-      [
-        volume,
-        muted,
-      ]
-    );
-
-  const playGinasio =
-    useCallback(
-      async () => {
-        await playGinasioTrack(
-          ginasioTrackIndexRef.current
-        );
-      },
-      [playGinasioTrack]
-    );
-
-  const nextGinasioTrack =
-    useCallback(
-      async () => {
-        const nextIndex =
-          (ginasioTrackIndexRef.current +
-            1) %
-          GINASIO_TRACKS.length;
-
-        await playGinasioTrack(
-          nextIndex
-        );
-      },
-      [playGinasioTrack]
-    );
-
-  /* =========================================================
-     AVANÇO AUTOMÁTICO — GINÁSIO
-     ========================================================= */
-
-  useEffect(() => {
-    const audio =
-      audioRef.current;
-
-    if (!audio) return;
-
-    const handleEnded = () => {
-      /*
-       * Só avançar automaticamente se
-       * o modo atual for realmente Ginásio.
-       */
-      if (
-        playerModeRef.current !==
-        'ginasio'
-      ) {
-        return;
-      }
-
-      void nextGinasioTrack();
-    };
-
-    audio.addEventListener(
-      'ended',
-      handleEnded
-    );
-
-    return () => {
-      audio.removeEventListener(
-        'ended',
-        handleEnded
-      );
-    };
-  }, [
-    nextGinasioTrack,
   ]);
 
   /* =========================================================
@@ -975,9 +640,6 @@ const radioReconnectAttemptRef =
         setError(false);
 
         try {
-          /*
-           * O player deixa de ser Ginásio.
-           */
           playerModeRef.current =
             'radio';
 
@@ -986,22 +648,18 @@ const radioReconnectAttemptRef =
           );
 
           /*
-           * A reconexão automática só se aplica
-           * à Rádio Marcoense.
+           * Apenas a Rádio Marcoense mantém
+           * reconexão automática.
            */
-          if (source !== 'marcoense') {
-            radioReconnectWantedRef.current =
-              false;
+          if (
+            source !== 'marcoense'
+          ) {
+            cancelRadioReconnect();
           }
 
           const sourceUrl =
             STREAMS[source];
 
-          /*
-           * Se já estamos nesta rádio
-           * e o mesmo stream está carregado,
-           * simplesmente alternamos Play/Pause.
-           */
           const currentSource =
             audio.getAttribute(
               'src'
@@ -1011,6 +669,10 @@ const radioReconnectAttemptRef =
             currentSource ===
             sourceUrl;
 
+          /*
+           * Já estamos no mesmo stream:
+           * Play / Pause.
+           */
           if (
             audioSourceRef.current ===
               source &&
@@ -1019,12 +681,34 @@ const radioReconnectAttemptRef =
             if (
               audio.paused
             ) {
+              /*
+               * Se for Marcoense, continuar
+               * a permitir reconexão.
+               */
+              radioReconnectWantedRef.current =
+                source === 'marcoense';
+
               await audio.play();
 
               setPlaying(
                 true
               );
             } else {
+              radioReconnectWantedRef.current =
+                false;
+
+              if (
+                radioReconnectTimerRef.current !==
+                null
+              ) {
+                window.clearTimeout(
+                  radioReconnectTimerRef.current
+                );
+
+                radioReconnectTimerRef.current =
+                  null;
+              }
+
               audio.pause();
 
               setPlaying(
@@ -1048,9 +732,6 @@ const radioReconnectAttemptRef =
 
           audio.load();
 
-          /*
-           * Atualizar rádio.
-           */
           audioSourceRef.current =
             source;
 
@@ -1068,19 +749,21 @@ const radioReconnectAttemptRef =
             'none';
 
           audio.volume =
-            volume;
+            volumeRef.current;
 
           audio.muted =
-            muted;
+            mutedRef.current;
 
           audio.load();
 
           /*
-           * O utilizador pretende continuar
-           * a ouvir esta rádio.
+           * A Marcoense pode reconectar automaticamente.
            */
           radioReconnectWantedRef.current =
             source === 'marcoense';
+
+          radioReconnectAttemptRef.current =
+            0;
 
           /*
            * Iniciar emissão.
@@ -1088,7 +771,6 @@ const radioReconnectAttemptRef =
           await audio.play();
 
           setPlaying(true);
-
           setLoading(false);
           setError(false);
         } catch (err) {
@@ -1098,14 +780,24 @@ const radioReconnectAttemptRef =
           );
 
           setPlaying(false);
-
           setLoading(false);
           setError(true);
+
+          /*
+           * Se for Marcoense, manter a intenção
+           * de reconectar mesmo que o primeiro play()
+           * falhe.
+           */
+          if (
+            source === 'marcoense'
+          ) {
+            radioReconnectWantedRef.current =
+              true;
+          }
         }
       },
       [
-        volume,
-        muted,
+        cancelRadioReconnect,
       ]
     );
 
@@ -1124,10 +816,6 @@ const radioReconnectAttemptRef =
        * Se estiver a tocar, pausa.
        */
       if (!audio.paused) {
-        /*
-         * Pause manual:
-         * não devemos tentar reconectar.
-         */
         radioReconnectWantedRef.current =
           false;
 
@@ -1149,39 +837,7 @@ const radioReconnectAttemptRef =
       }
 
       /*
-       * Se o modo for Ginásio,
-       * retomamos a faixa atual.
-       */
-      if (
-        playerModeRef.current ===
-        'ginasio'
-      ) {
-        try {
-          setLoading(true);
-          setError(false);
-
-          await audio.play();
-
-          setPlaying(true);
-
-          setLoading(false);
-        } catch (err) {
-          console.error(
-            'Erro ao retomar Ginásio:',
-            err
-          );
-
-          setPlaying(false);
-
-          setLoading(false);
-          setError(true);
-        }
-
-        return;
-      }
-
-      /*
-       * Caso contrário, retomar a rádio atual.
+       * Rádio atual.
        */
       await playSource(
         audioSourceRef.current
@@ -1201,20 +857,31 @@ const radioReconnectAttemptRef =
       );
 
     setVolume(value);
+    volumeRef.current =
+      value;
 
     const audio =
       audioRef.current;
 
     if (!audio) return;
 
-    audio.volume = value;
+    audio.volume =
+      value;
 
     if (value > 0) {
-      audio.muted = false;
+      audio.muted =
+        false;
+
+      mutedRef.current =
+        false;
 
       setMuted(false);
     } else {
-      audio.muted = true;
+      audio.muted =
+        true;
+
+      mutedRef.current =
+        true;
 
       setMuted(true);
     }
@@ -1236,6 +903,9 @@ const radioReconnectAttemptRef =
     audio.muted =
       newMuted;
 
+    mutedRef.current =
+      newMuted;
+
     setMuted(
       newMuted
     );
@@ -1251,28 +921,10 @@ const radioReconnectAttemptRef =
     const audio =
       audioRef.current;
 
-    /*
-     * Ao mudar de rádio/secção,
-     * cancelar qualquer reconexão pendente.
-     */
-    radioReconnectWantedRef.current =
-      false;
-
-    if (
-      radioReconnectTimerRef.current !==
-      null
-    ) {
-      window.clearTimeout(
-        radioReconnectTimerRef.current
-      );
-
-      radioReconnectTimerRef.current =
-        null;
-    }
+    cancelRadioReconnect();
 
     /*
-     * Se estamos a mudar de rádio
-     * ou vindos do Ginásio,
+     * Se estamos a mudar de rádio,
      * parar completamente o áudio.
      */
     if (
@@ -1293,7 +945,6 @@ const radioReconnectAttemptRef =
       audio.load();
 
       setPlaying(false);
-
       setLoading(false);
       setError(false);
     }
@@ -1408,7 +1059,50 @@ const radioReconnectAttemptRef =
      ========================================================= */
 
   return (
-    <div
+    <>
+      <style>{`
+        @keyframes radarTicker {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-50%);
+          }
+        }
+
+        .radar-ticker {
+          display: flex;
+          width: max-content;
+          animation: radarTicker 75s linear infinite;
+          will-change: transform;
+        }
+
+        .radar-ticker:hover {
+          animation-play-state: paused;
+        }
+
+        .radar-ticker-track {
+          display: flex;
+          align-items: center;
+          gap: 2rem;
+          padding-right: 2rem;
+          flex-shrink: 0;
+        }
+
+        @media (max-width: 640px) {
+          .radar-ticker {
+            animation-duration: 60s;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .radar-ticker {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div
       className={`min-h-screen ${
         darkMode
           ? 'bg-[#080808] text-white'
@@ -1440,7 +1134,7 @@ const radioReconnectAttemptRef =
               </div>
 
               <div className="text-[9px] sm:text-[10px] text-orange-400 uppercase tracking-[0.2em] font-bold mt-1">
-                Música • Rádio • Ambientes
+                Música • Rádio
               </div>
             </div>
           </button>
@@ -1454,14 +1148,15 @@ const radioReconnectAttemptRef =
                     !value
                 )
               }
-              className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all ${
+              className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-full text-[9px] sm:text-[10px] uppercase tracking-wider font-bold transition-all ${
                 carMode
                   ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
                   : 'bg-white/[0.06] text-zinc-400 hover:text-white hover:bg-white/[0.1]'
               }`}
             >
               <Car className="w-3.5 h-3.5" />
-              Modo carro
+              <span className="sm:hidden">Carro</span>
+              <span className="hidden sm:inline">Modo carro</span>
             </button>
 
             <button
@@ -1497,6 +1192,107 @@ const radioReconnectAttemptRef =
 
         {section === 'home' && (
           <section className="py-10 sm:py-16 lg:py-24">
+
+            {/* =================================================
+                RADAR MUSICAL
+                ================================================= */}
+
+            <section className="mb-10 sm:mb-14">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+
+                <span className="text-xs sm:text-sm uppercase tracking-[0.3em] font-black text-orange-400">
+                  Radar Musical
+                </span>
+
+                <span className="text-xs text-zinc-500 uppercase tracking-wider">
+                  Últimas notícias
+                </span>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
+
+                <div className="flex items-center">
+
+                  <div className="shrink-0 flex items-center px-4 sm:px-5 py-4 bg-orange-500 text-black font-black text-xs uppercase tracking-[0.18em] z-10">
+                    RADAR
+                  </div>
+
+                  <div className="min-w-0 flex-1 overflow-hidden">
+
+                    <div className="radar-ticker">
+
+                      <div className="radar-ticker-track">
+
+                        {newsItems.map((item) => (
+                          <a
+                            key={item.id}
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200 hover:text-white transition-colors"
+                          >
+                            <span
+                              className={
+                                item.category === 'Portugal'
+                                  ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
+                                  : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
+                              }
+                            >
+                              {item.category}
+                            </span>
+
+                            <span className="font-medium">
+                              {cleanNewsTitle(item.title)}
+                            </span>
+
+                            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-orange-400 shrink-0" />
+                          </a>
+                        ))}
+
+                      </div>
+
+                      <div className="radar-ticker-track" aria-hidden="true">
+
+                        {newsItems.map((item) => (
+                          <a
+                            key={`duplicate-${item.id}`}
+                            href={item.link}
+                            tabIndex={-1}
+                            className="group inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200 hover:text-white transition-colors"
+                          >
+                            <span
+                              className={
+                                item.category === 'Portugal'
+                                  ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
+                                  : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
+                              }
+                            >
+                              {item.category}
+                            </span>
+
+                            <span className="font-medium">
+                              {cleanNewsTitle(item.title)}
+                            </span>
+
+                            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-orange-400 shrink-0" />
+                          </a>
+                        ))}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </section>
+
             <div className="max-w-4xl mb-10 sm:mb-14">
               <div className="flex items-center gap-3 mb-5">
                 <span className="w-8 h-px bg-orange-500" />
@@ -1509,7 +1305,7 @@ const radioReconnectAttemptRef =
               <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-[-0.05em] leading-[0.95] max-w-4xl">
                 Música que cria
                 <span className="block text-zinc-500">
-                  ambientes.
+                  momentos.
                 </span>
               </h2>
 
@@ -1520,8 +1316,6 @@ const radioReconnectAttemptRef =
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
-              {/* CIRCUITO */}
 
               <button
                 type="button"
@@ -1576,8 +1370,6 @@ const radioReconnectAttemptRef =
                 </div>
               </button>
 
-              {/* MARCOENSE */}
-
               <button
                 type="button"
                 onClick={() =>
@@ -1621,51 +1413,7 @@ const radioReconnectAttemptRef =
                 </div>
               </button>
 
-              {/* AMBIENTES */}
 
-              <button
-                type="button"
-                onClick={() =>
-                  openSection(
-                    'ambientes'
-                  )
-                }
-                className="group relative overflow-hidden rounded-[28px] lg:col-span-12 min-h-[230px] text-left border border-white/[0.08] bg-gradient-to-r from-[#15120d] to-[#111] transition-all duration-500 hover:border-amber-500/30"
-              >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(245,158,11,0.13),transparent_40%)]" />
-
-                <div className="relative p-7 sm:p-10 h-full flex flex-col sm:flex-row sm:items-center justify-between gap-8">
-                  <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                      <Building2 className="w-6 h-6 text-amber-400" />
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-400 mb-2">
-                        Música profissional
-                      </div>
-
-                      <h3 className="text-2xl sm:text-3xl font-black tracking-[-0.03em]">
-                        Ambientes
-                      </h3>
-
-                      <p className="text-sm text-zinc-500 mt-2 max-w-xl">
-                        Música pensada para lojas,
-                        cafés, restaurantes, hotéis,
-                        ginásios e outros espaços.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs font-bold whitespace-nowrap">
-                    Explorar ambientes
-
-                    <span className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition-all">
-                      <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </div>
-                </div>
-              </button>
             </div>
           </section>
         )}
@@ -1709,8 +1457,6 @@ const radioReconnectAttemptRef =
                     : 'lg:grid-cols-[1fr_0.9fr]'
                 }`}
               >
-
-                {/* ARTWORK */}
 
                 <div className="min-h-[420px] sm:min-h-[520px] lg:min-h-[650px] flex items-center justify-center p-8 sm:p-12">
                   <div
@@ -1770,8 +1516,6 @@ const radioReconnectAttemptRef =
                   </div>
                 </div>
 
-                {/* PLAYER INFO */}
-
                 <div className="flex flex-col justify-center px-6 pb-10 lg:px-12 lg:py-12">
                   <div className="mb-8">
                     <div
@@ -1802,8 +1546,6 @@ const radioReconnectAttemptRef =
                         : 'Música selecionada • 24/7'}
                     </p>
                   </div>
-
-                  {/* NOW PLAYING */}
 
                   {section ===
                     'circuito' &&
@@ -1887,8 +1629,6 @@ const radioReconnectAttemptRef =
                       </div>
                     )}
 
-                  {/* STATUS */}
-
                   <div className="min-h-[24px] mb-5">
                     {loading && (
                       <p
@@ -1934,8 +1674,6 @@ const radioReconnectAttemptRef =
                       )}
                   </div>
 
-                  {/* PLAY */}
-
                   <div className="flex items-center gap-5">
                     <button
                       type="button"
@@ -1979,8 +1717,6 @@ const radioReconnectAttemptRef =
                         />
                       )}
                     </button>
-
-                    {/* VOLUME */}
 
                     {!carMode && (
                       <div className="flex items-center gap-3 flex-1 max-w-xs">
@@ -2027,10 +1763,6 @@ const radioReconnectAttemptRef =
                 </div>
               </div>
             </div>
-
-            {/* =================================================
-                PROGRAMAÇÃO — MARCOENSE
-                ================================================= */}
 
             {section ===
               'marcoense' && (
@@ -2094,112 +1826,6 @@ const radioReconnectAttemptRef =
           </section>
         )}
 
-        {/* ===================================================
-            AMBIENTES
-            =================================================== */}
-
-        {section ===
-          'ambientes' && (
-          <section className="py-6 sm:py-10">
-
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-zinc-500 hover:text-white transition-colors mb-8"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </button>
-
-            <div className="max-w-3xl mb-10">
-              <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-amber-400 mb-3">
-                Música profissional
-              </div>
-
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-[-0.05em] leading-none">
-                Música para
-                <span className="block text-zinc-500">
-                  cada espaço.
-                </span>
-              </h2>
-
-              <p className="text-sm sm:text-base text-zinc-500 mt-5 max-w-2xl leading-relaxed">
-                Experiências musicais pensadas para
-                acompanhar o ambiente, o negócio e
-                as pessoas que o frequentam.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {AMBIENTES.map(
-                (ambiente) => {
-                  const Icon =
-                    ambiente.icon;
-
-                  return (
-                    <button
-                      key={
-                        ambiente.id
-                      }
-                      type="button"
-                      onClick={() => {
-                        if (
-                          ambiente.id ===
-                          'ginasio'
-                        ) {
-                          void playGinasio();
-                        }
-                      }}
-                      className="group relative overflow-hidden rounded-[26px] min-h-[340px] text-left border border-white/[0.08] bg-zinc-900"
-                    >
-                      <img
-                        src={
-                          ambiente.image
-                        }
-                        alt={`Música ambiente para ${ambiente.title}`}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        loading="lazy"
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/5" />
-
-                      <div className="absolute top-5 left-5 w-11 h-11 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-white" />
-                      </div>
-
-                      <div className="absolute inset-x-0 bottom-0 p-6">
-                        <div className="text-[9px] uppercase tracking-[0.25em] text-amber-400 font-bold mb-2">
-                          Ambiente musical
-                        </div>
-
-                        <h3 className="text-2xl font-black">
-                          {
-                            ambiente.title
-                          }
-                        </h3>
-
-                        <p className="text-xs text-zinc-300 leading-relaxed mt-2 max-w-sm">
-                          {
-                            ambiente.description
-                          }
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-5 text-[9px] uppercase tracking-[0.2em] font-bold text-white/70">
-                          {ambiente.id ===
-                          'ginasio'
-                            ? 'Ouvir agora'
-                            : 'Em breve'}
-
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-                    </button>
-                  );
-                }
-              )}
-            </div>
-          </section>
-        )}
       </main>
 
       {/* =====================================================
@@ -2224,34 +1850,23 @@ const radioReconnectAttemptRef =
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    {playerMode ===
-                    'ginasio' ? (
-                      <Dumbbell className="w-5 h-5 text-amber-400" />
-                    ) : (
-                      <Radio className="w-5 h-5 text-orange-400" />
-                    )}
+                    <Radio className="w-5 h-5 text-orange-400" />
                   </div>
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold truncate">
-                  {playerMode ===
-                  'ginasio'
-                    ? 'Ginásio'
-                    : section ===
-                      'marcoense'
+                  {section ===
+                  'marcoense'
                     ? 'Rádio Marcoense'
                     : nowPlaying?.title ||
                       'Circuito Interno'}
                 </div>
 
                 <div className="text-[10px] text-zinc-500 truncate">
-                  {playerMode ===
-                  'ginasio'
-                    ? 'Música ambiente'
-                    : section ===
-                      'circuito'
+                  {section ===
+                  'circuito'
                     ? nowPlaying?.artist ||
                       'Em emissão'
                     : '93.3 FM'}
@@ -2273,6 +1888,27 @@ const radioReconnectAttemptRef =
         )}
 
       {/* =====================================================
+          CONTACTO WHATSAPP
+          ===================================================== */}
+
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+        <a
+          href="https://wa.me/351963350373?text=Ol%C3%A1%20Paulo%21%20Estou%20a%20ouvir%20o%20Circuito%20Interno%20atrav%C3%A9s%20da%20app%20e%20queria%20deixar%20uma%20mensagem."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-3 w-full sm:w-auto sm:max-w-sm mx-auto px-5 py-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all group"
+        >
+          <MessageCircle className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
+
+          <span className="text-sm font-bold">
+            Conversar com o Circuito Interno
+          </span>
+
+          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+        </a>
+      </section>
+
+      {/* =====================================================
           AUDIO
           ===================================================== */}
 
@@ -2282,5 +1918,6 @@ const radioReconnectAttemptRef =
         playsInline
       />
     </div>
+    </>
   );
 }
