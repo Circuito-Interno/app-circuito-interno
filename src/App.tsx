@@ -102,7 +102,7 @@ const STREAMS: Record<AudioSource, string> = {
    * Stream HTTP direto do servidor.
    */
   marcoense:
-    'https://shiny-fire-6999.marcoense-relay.workers.dev/stream',
+    'https://radiometalon.com/listen/marcoensefm/radio.mp3',
 };
 
 const NOW_PLAYING_URL =
@@ -745,8 +745,14 @@ export default function App() {
           audio.src =
             sourceUrl;
 
+          /*
+           * Rádio em direto:
+           * manter o elemento preparado para receber
+           * o fluxo contínuo, evitando cortes causados
+           * por preload="none".
+           */
           audio.preload =
-            'none';
+            'auto';
 
           audio.volume =
             volumeRef.current;
