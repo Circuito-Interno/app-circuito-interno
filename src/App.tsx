@@ -102,7 +102,7 @@ const STREAMS: Record<AudioSource, string> = {
    * Stream HTTP direto do servidor.
    */
   marcoense:
-    'https://radiometalon.com/listen/marcoensefm/radio.mp3',
+    'https://radio.garden/api/ara/content/listen/z_icHAFI/channel.mp3',
 };
 
 const NOW_PLAYING_URL =
