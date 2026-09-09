@@ -96,11 +96,6 @@ const STREAMS: Record<AudioSource, string> = {
   circuito:
     'https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3',
 
-  /*
-   * Rádio Marcoense
-   *
-   * Stream HTTP direto do servidor.
-   */
   marcoense:
     'https://radio.garden/api/ara/content/listen/z_icHAFI/channel.mp3',
 };
