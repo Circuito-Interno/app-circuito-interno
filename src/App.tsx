@@ -264,6 +264,30 @@ export default function App() {
       muted;
   }, [muted]);
 
+/* =========================================================
+     RETOMAR EMISSÃO AO REGRESSAR À APP (EX: APÓS INSTAGRAM)
+     ========================================================= */
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && radioReconnectWantedRef.current) {
+        const audio = audioRef.current;
+        if (audio && audio.paused) {
+          try {
+            await audio.play();
+            setPlaying(true);
+          } catch (err) {
+            console.error('Erro ao retomar emissão automaticamente:', err);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   /* =========================================================
      RADAR MUSICAL — CARREGAR NOTÍCIAS
      ========================================================= */
