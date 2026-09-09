@@ -1213,59 +1213,42 @@ export default function App() {
                   </span>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
-                  <div className="flex items-center">
+                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)] min-h-[52px]">
+                  <div className="flex items-center h-full py-3.5">
                     <div className="shrink-0 flex items-center px-4 sm:px-5 py-4 bg-orange-500 text-black font-black text-xs uppercase tracking-[0.18em] z-10">
                       RADAR
                     </div>
 
                     <div className="min-w-0 flex-1 overflow-hidden">
                       <div className="radar-ticker">
-                        <div className="radar-ticker-track">
-                          {newsItems.map((item) => (
-                            <div
-                              key={item.id}
-                              className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
-                            >
-                              <span
-                                className={
-                                  item.category === 'Portugal'
-                                    ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                    : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                }
+                        {[0, 1, 2, 3].map((loopIndex) => (
+                          <div
+                            key={loopIndex}
+                            className="radar-ticker-track"
+                            aria-hidden={loopIndex > 0 ? "true" : undefined}
+                          >
+                            {newsItems.map((item) => (
+                              <div
+                                key={`${loopIndex}-${item.id}`}
+                                className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
                               >
-                                {item.category}
-                              </span>
+                                <span
+                                  className={
+                                    item.category === 'Portugal'
+                                      ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
+                                      : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
+                                  }
+                                >
+                                  {item.category}
+                                </span>
 
-                              <span className="font-medium">
-                                {cleanNewsTitle(item.title)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="radar-ticker-track" aria-hidden="true">
-                          {newsItems.map((item) => (
-                            <div
-                              key={`duplicate-${item.id}`}
-                              className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
-                            >
-                              <span
-                                className={
-                                  item.category === 'Portugal'
-                                    ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                    : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                }
-                              >
-                                {item.category}
-                              </span>
-
-                              <span className="font-medium">
-                                {cleanNewsTitle(item.title)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                                <span className="font-medium whitespace-nowrap">
+                                  {cleanNewsTitle(item.title)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
