@@ -81,7 +81,6 @@ function cleanNewsTitle(title: string): string {
     .trim();
 }
 
-
 /* =========================================================
    STREAMS
    ========================================================= */
@@ -266,7 +265,7 @@ export default function App() {
   }, []);
 
   /* =========================================================
-     RETOMAR EMISSÃO AO REGRESSAR À APP (EX: APÓS INSTAGRAM)
+     RETOMAR EMISSÃO AO REGRESSAR À APP
      ========================================================= */
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -292,7 +291,6 @@ export default function App() {
   /* =========================================================
      RADAR MUSICAL — CARREGAR NOTÍCIAS
      ========================================================= */
-
   useEffect(() => {
     let cancelled = false;
 
@@ -1127,83 +1125,64 @@ export default function App() {
                   </span>
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
-
-                  <div className="flex items-center">
-
+                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)] min-h-[52px]">
+                  <div className="flex items-center h-full">
                     <div className="shrink-0 flex items-center px-4 sm:px-5 py-4 bg-orange-500 text-black font-black text-xs uppercase tracking-[0.18em] z-10">
                       RADAR
                     </div>
 
                     <div className="min-w-0 flex-1 overflow-hidden">
-
-                      <div className="radar-ticker">
-
-                        <div className="radar-ticker-track">
-
-                          {newsItems.map((item) => (
-                            <a
-                              key={item.id}
-                              href={item.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="group inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200 hover:text-white transition-colors"
-                            >
-                              <span
-                                className={
-                                  item.category === 'Portugal'
-                                    ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                    : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                }
+                      {newsItems.length > 0 && (
+                        <div className="radar-ticker">
+                          <div className="radar-ticker-track">
+                            {newsItems.map((item) => (
+                              <div
+                                key={item.id}
+                                className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
                               >
-                                {item.category}
-                              </span>
+                                <span
+                                  className={
+                                    item.category === 'Portugal'
+                                      ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
+                                      : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
+                                  }
+                                >
+                                  {item.category}
+                                </span>
 
-                              <span className="font-medium">
-                                {cleanNewsTitle(item.title)}
-                              </span>
+                                <span className="font-medium whitespace-nowrap">
+                                  {cleanNewsTitle(item.title)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
 
-                              <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-orange-400 shrink-0" />
-                            </a>
-                          ))}
-
-                        </div>
-
-                        <div className="radar-ticker-track" aria-hidden="true">
-
-                          {newsItems.map((item) => (
-                            <a
-                              key={`duplicate-${item.id}`}
-                              href={item.link}
-                              tabIndex={-1}
-                              className="group inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200 hover:text-white transition-colors"
-                            >
-                              <span
-                                className={
-                                  item.category === 'Portugal'
-                                    ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                    : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                }
+                          <div className="radar-ticker-track" aria-hidden="true">
+                            {newsItems.map((item) => (
+                              <div
+                                key={`duplicate-${item.id}`}
+                                className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
                               >
-                                {item.category}
-                              </span>
+                                <span
+                                  className={
+                                    item.category === 'Portugal'
+                                      ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
+                                      : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
+                                  }
+                                >
+                                  {item.category}
+                                </span>
 
-                              <span className="font-medium">
-                                {cleanNewsTitle(item.title)}
-                              </span>
-
-                              <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-orange-400 shrink-0" />
-                            </a>
-                          ))}
-
+                                <span className="font-medium whitespace-nowrap">
+                                  {cleanNewsTitle(item.title)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-
-                      </div>
-
+                      )}
                     </div>
-
                   </div>
-
                 </div>
               </section>
 
@@ -1326,7 +1305,6 @@ export default function App() {
                     </div>
                   </div>
                 </button>
-
 
               </div>
             </section>
