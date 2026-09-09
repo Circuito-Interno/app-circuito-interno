@@ -265,6 +265,50 @@ export default function App() {
   }, [muted]);
 
 /* =========================================================
+     RECONEXÃO AUTOMÁTICA EM CASO DE CORTE DO SERVIDOR (IPS)
+     ========================================================= */
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let retryTimer: number;
+
+    const handleStreamStall = () => {
+      if (radioReconnectWantedRef.current && audioSourceRef.current === 'marcoense') {
+        console.warn('Corte de emissão detetado. A reconectar ao stream...');
+        setLoading(true);
+
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => {
+          // Força a renovação da ligação ao recarregar a fonte com um timestamp
+          const baseUrl = STREAMS.marcoense.split('?')[0];
+          audio.src = `${baseUrl}?nocache=${Date.now()}`;
+          audio.load();
+          audio.play()
+            .then(() => {
+              setPlaying(true);
+              setLoading(false);
+              setError(false);
+            })
+            .catch(() => {
+              setLoading(false);
+              setError(true);
+            });
+        }, 1500);
+      }
+    };
+
+    audio.addEventListener('stalled', handleStreamStall);
+    audio.addEventListener('error', handleStreamStall);
+
+    return () => {
+      audio.removeEventListener('stalled', handleStreamStall);
+      audio.removeEventListener('error', handleStreamStall);
+      clearTimeout(retryTimer);
+    };
+  }, []);
+
+/* =========================================================
      RETOMAR EMISSÃO AO REGRESSAR À APP (EX: APÓS INSTAGRAM)
      ========================================================= */
   useEffect(() => {
