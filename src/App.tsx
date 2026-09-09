@@ -1129,6 +1129,7 @@ export default function App() {
 
   return (
     <>
+      
       <style>{`
         @keyframes radarTicker {
           from {
@@ -1142,7 +1143,8 @@ export default function App() {
         .radar-ticker {
           display: flex;
           width: max-content;
-          animation: radarTicker 75s linear infinite;
+          /* Aumentado de 75s para 180s para um movimento suave e legível */
+          animation: radarTicker 180s linear infinite;
           will-change: transform;
         }
 
@@ -1160,7 +1162,8 @@ export default function App() {
 
         @media (max-width: 640px) {
           .radar-ticker {
-            animation-duration: 60s;
+            /* Aumentado de 60s para 140s nos telemóveis */
+            animation-duration: 140s;
           }
         }
 
