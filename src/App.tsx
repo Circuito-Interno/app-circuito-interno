@@ -841,8 +841,12 @@ export default function App() {
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
-                      <Radio className="w-6 h-6 text-red-400" />
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
+                      <img 
+                        src="/icons/marcoense-logo.png" 
+                        alt="Rádio Marcoense 93.3 FM" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div>
                       <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-red-400">
