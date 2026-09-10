@@ -228,25 +228,33 @@ export default function App() {
       const audio = audioRef.current;
       if (!audio) return;
 
+      // Se a app voltou a estar visível e o utilizador tinha a rádio a tocar
       if (document.visibilityState === 'visible' && radioReconnectWantedRef.current) {
-        if (audio.paused) {
-          try {
-            console.log('A retomar emissão automaticamente ao voltar à app...');
-            setLoading(true);
-            await audio.play();
-            setPlaying(true);
-            setLoading(false);
-          } catch (err) {
-            console.error('Erro ao retomar emissão automaticamente:', err);
-            const currentSrc = audioSourceRef.current;
-            const baseUrl = STREAMS[currentSrc].split('?')[0];
-            audio.src = `${baseUrl}?nocache=${Date.now()}`;
-            audio.load();
-            audio.play().then(() => {
-              setPlaying(true);
-              setLoading(false);
-            }).catch(() => setLoading(false));
-          }
+        console.log('Regresso à app detetado. A restabelecer ligação do stream...');
+        setLoading(true);
+
+        try {
+          // 1. Limpa a ligação antiga que o Facebook/iOS fechou
+          audio.pause();
+          audio.removeAttribute('src');
+          audio.load();
+
+          // 2. Recarrega o stream com timestamp para garantir uma ligação nova
+          const currentSrc = audioSourceRef.current;
+          const baseUrl = STREAMS[currentSrc].split('?')[0];
+          audio.src = `${baseUrl}?nocache=${Date.now()}`;
+          audio.preload = 'auto';
+          audio.load();
+
+          // 3. Retoma a reprodução
+          await audio.play();
+          setPlaying(true);
+          setLoading(false);
+          setError(false);
+        } catch (err) {
+          console.error('Erro ao restabelecer áudio após redes sociais:', err);
+          setLoading(false);
+          setError(true);
         }
       }
     };
