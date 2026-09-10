@@ -386,6 +386,55 @@ export default function App() {
     return () => window.clearInterval(interval);
   }, [playing, playerMode, audioSource]);
 
+/* =========================================================
+     MEDIA SESSION API — LOCK SCREEN DO IOS / ANDROID
+     ========================================================= */
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    // Configuração dos Metadados (Capa, Título e Artista)
+    if (audioSource === 'circuito') {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: nowPlaying?.title || 'Emissão em Direto',
+        artist: nowPlaying?.artist || 'Rádio Circuito Interno',
+        album: 'Música que cria momentos',
+        artwork: [
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
+      });
+    } else {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Rádio Marcoense 93.3 FM',
+        artist: 'Emissão Regional',
+        album: 'Direto de Marco de Canaveses',
+        artwork: [
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
+      });
+    }
+
+    // Remoção dos botões de retroceder/avançar 10 segundos no ecrã de bloqueio
+    navigator.mediaSession.setActionHandler('seekbackward', null);
+    navigator.mediaSession.setActionHandler('seekforward', null);
+    navigator.mediaSession.setActionHandler('previoustrack', null);
+    navigator.mediaSession.setActionHandler('nexttrack', null);
+
+    // Mapeamento dos botões Play / Pause no ecrã de bloqueio
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (audioRef.current) {
+        void audioRef.current.play();
+      }
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    });
+  }, [audioSource, nowPlaying]);
+
   /* =========================================================
      CONTROLO DE REPRODUÇÃO
      ========================================================= */
