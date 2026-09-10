@@ -733,6 +733,13 @@ export default function App() {
                               <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
                             </div>
                           </div>
+
+                          {/* UTILIZAÇÃO DA VARIÁVEL nextSong */}
+                          {nextSong && (
+                            <div className="mt-3 text-xs text-zinc-400 truncate">
+                              <span className="text-[9px] uppercase font-bold text-orange-400">A seguir:</span> {nextSong.artist} — {nextSong.title}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -754,8 +761,14 @@ export default function App() {
                           <div className="text-xs font-bold">
                             {playing && audioSource === 'circuito' ? '● EM EMISSÃO' : 'Iniciar Emissão'}
                           </div>
+                          
+                          {/* UTILIZAÇÃO DA VARIÁVEL error */}
                           <div className="text-[10px] text-zinc-500">
-                            {loading && audioSource === 'circuito' ? 'A ligar...' : '24 Horas no Ar'}
+                            {loading && audioSource === 'circuito'
+                              ? 'A ligar...'
+                              : error && audioSource === 'circuito'
+                              ? 'Erro ao ligar'
+                              : '24 Horas no Ar'}
                           </div>
                         </div>
                       </div>
@@ -844,7 +857,11 @@ export default function App() {
                             {playing && audioSource === 'marcoense' ? '● EM EMISSÃO' : 'Iniciar 93.3 FM'}
                           </div>
                           <div className="text-[10px] text-zinc-500">
-                            {loading && audioSource === 'marcoense' ? 'A ligar...' : 'Direto de Marco de Canaveses'}
+                            {loading && audioSource === 'marcoense'
+                              ? 'A ligar...'
+                              : error && audioSource === 'marcoense'
+                              ? 'Erro ao ligar'
+                              : 'Direto de Marco de Canaveses'}
                           </div>
                         </div>
                       </div>
