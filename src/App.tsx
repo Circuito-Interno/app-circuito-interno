@@ -98,7 +98,7 @@ const NOW_PLAYING_URL =
 const SCHEDULE: ScheduleItem[] = [
   {
     id: '1',
-    title: 'Circuito Interno - Romântico',
+    title: 'O Homem do Leme by Circuito Interno',
     day: 'Terça a Quinta',
     time: '22h00 às 24h00',
     description:
@@ -106,7 +106,7 @@ const SCHEDULE: ScheduleItem[] = [
   },
   {
     id: '2',
-    title: 'Circuito Interno - Rock & Indie Alternativo',
+    title: 'Lado B by Circuito Interno',
     day: 'Sexta',
     time: '22h00 às 24h00',
     description:
@@ -114,7 +114,7 @@ const SCHEDULE: ScheduleItem[] = [
   },
   {
     id: '3',
-    title: 'Circuito Interno - Grandes Clássicos',
+    title: 'Marcas do Tempo by Circuito Interno',
     day: 'Sábado',
     time: '13h00 às 15h00',
     description:
