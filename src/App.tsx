@@ -238,18 +238,15 @@ export default function App() {
             console.warn('Corte de emissão detetado. A resetar ligação e reconectar...');
             setLoading(true);
 
-            // 1. Força a paragem e limpa a sessão antiga presa na memória do browser
             audio.pause();
             audio.removeAttribute('src');
             audio.load();
 
-            // 2. Cria uma nova ligação limpa com timestamp para ignorar a cache
             const baseUrl = STREAMS.marcoense.split('?')[0];
             audio.src = `${baseUrl}?nocache=${Date.now()}`;
             audio.preload = 'auto';
             audio.load();
 
-            // 3. Tenta retomar a emissão
             audio.play()
               .then(() => {
                 setPlaying(true);
@@ -301,7 +298,7 @@ export default function App() {
   }, []);
 
   /* =========================================================
-     RADAR MUSICAL — CARREGAR NOTÍCIAS
+     RADAR MUSICAL — CARREGAR NOTÍCIAS (A CADA 1 HORA)
      ========================================================= */
   useEffect(() => {
     let cancelled = false;
@@ -341,7 +338,7 @@ export default function App() {
     const interval =
       window.setInterval(
         loadNews,
-        5 * 60 * 1000
+        60 * 60 * 1000
       );
 
     return () => {
@@ -1008,8 +1005,8 @@ export default function App() {
         .radar-ticker-track {
           display: flex;
           align-items: center;
-          gap: 2rem;
-          padding-right: 2rem;
+          gap: 2.5rem;
+          padding-right: 2.5rem;
           flex-shrink: 0;
         }
 
@@ -1118,7 +1115,7 @@ export default function App() {
             <section className="py-10 sm:py-16 lg:py-24">
 
               {/* =================================================
-                  RADAR MUSICAL
+                  RADAR MUSICAL (Apenas com títulos limpos e ponto)
                   ================================================= */}
 
               <section className="mb-10 sm:mb-14">
@@ -1150,20 +1147,14 @@ export default function App() {
                             {newsItems.map((item) => (
                               <div
                                 key={item.id}
-                                className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
+                                className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
                               >
-                                <span
-                                  className={
-                                    item.category === 'Portugal'
-                                      ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                      : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                  }
-                                >
-                                  {item.category}
-                                </span>
-
                                 <span className="font-medium whitespace-nowrap">
                                   {cleanNewsTitle(item.title)}
+                                </span>
+
+                                <span className="text-orange-500 font-bold text-sm">
+                                  •
                                 </span>
                               </div>
                             ))}
@@ -1173,20 +1164,14 @@ export default function App() {
                             {newsItems.map((item) => (
                               <div
                                 key={`duplicate-${item.id}`}
-                                className="inline-flex items-center gap-3 text-base sm:text-lg text-zinc-200"
+                                className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
                               >
-                                <span
-                                  className={
-                                    item.category === 'Portugal'
-                                      ? 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-emerald-400'
-                                      : 'text-xs sm:text-sm uppercase tracking-[0.16em] font-black text-sky-400'
-                                  }
-                                >
-                                  {item.category}
-                                </span>
-
                                 <span className="font-medium whitespace-nowrap">
                                   {cleanNewsTitle(item.title)}
+                                </span>
+
+                                <span className="text-orange-500 font-bold text-sm">
+                                  •
                                 </span>
                               </div>
                             ))}
