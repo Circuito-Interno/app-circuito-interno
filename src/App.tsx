@@ -387,39 +387,27 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
 /* =========================================================
-     MEDIA SESSION API — LOCK SCREEN PERFECT MATCH
+     MEDIA SESSION API — BACKGROUND PLAYBACK STABLE
      ========================================================= */
-  
-     useEffect(() => {
+  useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    const origin = window.location.origin;
+    const isCircuito = audioSource === 'circuito';
 
-    if (audioSource === 'circuito') {
-      const songInfo = nowPlaying?.artist && nowPlaying?.title
-        ? `${nowPlaying.artist} • ${nowPlaying.title}`
-        : 'Música que cria momentos';
-
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Circuito Interno',
-        artist: songInfo,
-        album: 'Rádio Online',
-        artwork: [
-          { src: `${origin}/icons/artwork-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
-          { src: `${origin}/artwork-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
-        ],
-      });
-    } else {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Rádio Marcoense',
-        artist: '93.3 FM • Emissão Regional',
-        album: 'Rádio Local',
-        artwork: [
-          { src: `${origin}/icons/marcoense-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
-          { src: `${origin}/marcoense-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
-        ],
-      });
-    }
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: isCircuito ? 'Circuito Interno' : 'Rádio Marcoense',
+      artist: isCircuito
+        ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
+        : '93.3 FM • Emissão Regional',
+      album: isCircuito ? 'Rádio Online' : 'Marco de Canaveses',
+      artwork: [
+        {
+          src: isCircuito ? '/icons/artwork-solid.png?v=100' : '/icons/marcoense-solid.png?v=100',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+      ],
+    });
 
     try {
       navigator.mediaSession.setActionHandler('seekbackward', null);
@@ -427,7 +415,7 @@ export default function App() {
       navigator.mediaSession.setActionHandler('previoustrack', null);
       navigator.mediaSession.setActionHandler('nexttrack', null);
     } catch (e) {
-      console.warn('MediaSession action handler error:', e);
+      // Ignora erros de handlers nao suportados
     }
 
     try {
@@ -438,9 +426,9 @@ export default function App() {
         if (audioRef.current) audioRef.current.pause();
       });
     } catch (e) {
-      console.warn('MediaSession play/pause error:', e);
+      // Ignora erros de handlers
     }
-  }, [audioSource, nowPlaying, playing]);
+  }, [audioSource, nowPlaying]);
 
   /* =========================================================
      CONTROLO DE REPRODUÇÃO
@@ -999,7 +987,7 @@ export default function App() {
           </div>
         )}
 
-        <audio ref={audioRef} preload="none" playsInline />
+        <audio ref={audioRef} playsInline preload="none" />
       </div>
     </>
   );
