@@ -389,26 +389,38 @@ export default function App() {
 /* =========================================================
      MEDIA SESSION API — LOCK SCREEN PERFECT MATCH
      ========================================================= */
-  useEffect(() => {
+  
+     useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    const songInfo = audioSource === 'circuito'
-      ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
-      : '93.3 FM • Emissão Regional';
+    const origin = window.location.origin;
 
-    const stationTitle = audioSource === 'circuito' ? 'Circuito Interno' : 'Rádio Marcoense';
+    if (audioSource === 'circuito') {
+      const songInfo = nowPlaying?.artist && nowPlaying?.title
+        ? `${nowPlaying.artist} • ${nowPlaying.title}`
+        : 'Música que cria momentos';
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: stationTitle,
-      artist: songInfo,
-      album: audioSource === 'circuito' ? 'Rádio Online' : 'Rádio Local',
-      artwork: [
-        { src: '/icons/artwork-solid.png?v=30', sizes: '512x512', type: 'image/png' },
-        { src: '/artwork-solid.png?v=30', sizes: '512x512', type: 'image/png' },
-      ],
-    });
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Circuito Interno',
+        artist: songInfo,
+        album: 'Rádio Online',
+        artwork: [
+          { src: `${origin}/icons/artwork-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
+          { src: `${origin}/artwork-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
+        ],
+      });
+    } else {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Rádio Marcoense',
+        artist: '93.3 FM • Emissão Regional',
+        album: 'Rádio Local',
+        artwork: [
+          { src: `${origin}/icons/marcoense-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
+          { src: `${origin}/marcoense-solid.png?v=90`, sizes: '512x512', type: 'image/png' },
+        ],
+      });
+    }
 
-    // Desativar obrigatoriamente os controlos de andar 10s para tras/frente
     try {
       navigator.mediaSession.setActionHandler('seekbackward', null);
       navigator.mediaSession.setActionHandler('seekforward', null);
