@@ -151,12 +151,10 @@ export default function App() {
   const [playerMode, setPlayerMode] = useState<PlayerMode>('radio');
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const [carMode, setCarMode] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
 
   const [nowPlaying, setNowPlaying] = useState<NowPlayingSong | null>(null);
-  const [nextSong, setNextSong] = useState<NowPlayingSong | null>(null);
   const [songElapsed, setSongElapsed] = useState(0);
   const [songRemaining, setSongRemaining] = useState(0);
 
@@ -198,12 +196,10 @@ export default function App() {
               .then(() => {
                 setPlaying(true);
                 setLoading(false);
-                setError(false);
               })
               .catch((err) => {
                 console.error('Falha ao reconectar:', err);
                 setLoading(false);
-                setError(true);
               });
           }
         }, 2000);
@@ -228,33 +224,25 @@ export default function App() {
       const audio = audioRef.current;
       if (!audio) return;
 
-      // Se a app voltou a estar visível e o utilizador tinha a rádio a tocar
       if (document.visibilityState === 'visible' && radioReconnectWantedRef.current) {
-        console.log('Regresso à app detetado. A restabelecer ligação do stream...');
-        setLoading(true);
-
-        try {
-          // 1. Limpa a ligação antiga que o Facebook/iOS fechou
-          audio.pause();
-          audio.removeAttribute('src');
-          audio.load();
-
-          // 2. Recarrega o stream com timestamp para garantir uma ligação nova
-          const currentSrc = audioSourceRef.current;
-          const baseUrl = STREAMS[currentSrc].split('?')[0];
-          audio.src = `${baseUrl}?nocache=${Date.now()}`;
-          audio.preload = 'auto';
-          audio.load();
-
-          // 3. Retoma a reprodução
-          await audio.play();
-          setPlaying(true);
-          setLoading(false);
-          setError(false);
-        } catch (err) {
-          console.error('Erro ao restabelecer áudio após redes sociais:', err);
-          setLoading(false);
-          setError(true);
+        if (audio.paused) {
+          try {
+            console.log('A retomar emissão automaticamente ao voltar à app...');
+            setLoading(true);
+            await audio.play();
+            setPlaying(true);
+            setLoading(false);
+          } catch (err) {
+            console.error('Erro ao retomar emissão automaticamente:', err);
+            const currentSrc = audioSourceRef.current;
+            const baseUrl = STREAMS[currentSrc].split('?')[0];
+            audio.src = `${baseUrl}?nocache=${Date.now()}`;
+            audio.load();
+            audio.play().then(() => {
+              setPlaying(true);
+              setLoading(false);
+            }).catch(() => setLoading(false));
+          }
         }
       }
     };
@@ -310,7 +298,7 @@ export default function App() {
     audio.volume = volumeRef.current;
     audio.muted = mutedRef.current;
 
-    const handlePlay = () => { setPlaying(true); setLoading(false); setError(false); };
+    const handlePlay = () => { setPlaying(true); setLoading(false); };
     const handlePause = () => { setPlaying(false); setLoading(false); };
     const handleWaiting = () => { setLoading(true); };
     const handlePlaying = () => {
@@ -321,9 +309,8 @@ export default function App() {
       radioReconnectAttemptRef.current = 0;
       setPlaying(true);
       setLoading(false);
-      setError(false);
     };
-    const handleError = () => { setPlaying(false); setLoading(false); setError(true); };
+    const handleError = () => { setPlaying(false); setLoading(false); };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
@@ -353,7 +340,6 @@ export default function App() {
   useEffect(() => {
     if (playerMode !== 'radio' || audioSource !== 'circuito') {
       setNowPlaying(null);
-      setNextSong(null);
       setSongElapsed(0);
       setSongRemaining(0);
       return;
@@ -369,7 +355,6 @@ export default function App() {
 
         if (cancelled) return;
         setNowPlaying(data.now_playing?.song ?? null);
-        setNextSong(data.playing_next?.song ?? null);
         setSongElapsed(data.now_playing?.elapsed ?? 0);
         setSongRemaining(data.now_playing?.remaining ?? 0);
       } catch (err) {
@@ -400,7 +385,6 @@ export default function App() {
       if (!audio) return;
 
       setLoading(true);
-      setError(false);
 
       try {
         playerModeRef.current = 'radio';
@@ -441,12 +425,10 @@ export default function App() {
         await audio.play();
         setPlaying(true);
         setLoading(false);
-        setError(false);
       } catch (err) {
         console.error('Erro ao iniciar o stream:', err);
         setPlaying(false);
         setLoading(false);
-        setError(true);
         radioReconnectWantedRef.current = true;
       }
     },
@@ -741,13 +723,6 @@ export default function App() {
                               <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
                             </div>
                           </div>
-
-                          {/* UTILIZAÇÃO DA VARIÁVEL nextSong */}
-                          {nextSong && (
-                            <div className="mt-3 text-xs text-zinc-400 truncate">
-                              <span className="text-[9px] uppercase font-bold text-orange-400">A seguir:</span> {nextSong.artist} — {nextSong.title}
-                            </div>
-                          )}
                         </div>
                       </div>
                     ) : (
@@ -769,14 +744,8 @@ export default function App() {
                           <div className="text-xs font-bold">
                             {playing && audioSource === 'circuito' ? '● EM EMISSÃO' : 'Iniciar Emissão'}
                           </div>
-                          
-                          {/* UTILIZAÇÃO DA VARIÁVEL error */}
                           <div className="text-[10px] text-zinc-500">
-                            {loading && audioSource === 'circuito'
-                              ? 'A ligar...'
-                              : error && audioSource === 'circuito'
-                              ? 'Erro ao ligar'
-                              : '24 Horas no Ar'}
+                            {loading && audioSource === 'circuito' ? 'A ligar...' : '24 Horas no Ar'}
                           </div>
                         </div>
                       </div>
@@ -865,11 +834,7 @@ export default function App() {
                             {playing && audioSource === 'marcoense' ? '● EM EMISSÃO' : 'Iniciar 93.3 FM'}
                           </div>
                           <div className="text-[10px] text-zinc-500">
-                            {loading && audioSource === 'marcoense'
-                              ? 'A ligar...'
-                              : error && audioSource === 'marcoense'
-                              ? 'Erro ao ligar'
-                              : 'Direto de Marco de Canaveses'}
+                            {loading && audioSource === 'marcoense' ? 'A ligar...' : 'Direto de Marco de Canaveses'}
                           </div>
                         </div>
                       </div>
