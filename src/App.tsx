@@ -90,7 +90,7 @@ const STREAMS: Record<AudioSource, string> = {
     'https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3',
 
   marcoense:
-    'https://radio.garden/api/ara/content/listen/z_icHAFI/channel.mp3',
+    'https://streaming.shoutcast.com/marcoense-fm',
 };
 
 const NOW_PLAYING_URL =
