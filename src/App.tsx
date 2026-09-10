@@ -136,7 +136,7 @@ export default function App() {
 
   const radioReconnectTimerRef = useRef<number | null>(null);
   const radioReconnectWantedRef = useRef(false);
-  const radioReconnectAttemptRef = useRef(0);
+  const lastTimeRef = useRef<number>(0);
 
   /* =======================================================
      ESTADOS
@@ -166,43 +166,51 @@ export default function App() {
   useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   /* =========================================================
-     RECONEXÃO AUTOMÁTICA EM CASO DE CORTE DO SERVIDOR
+     RECONEXÃO AUTOMÁTICA E PROTEÇÃO CONTRA CORTE DE STREAM
      ========================================================= */
+  const forceReconnectStream = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    console.warn('Corte detetado. A restabelecer emissão...');
+    setLoading(true);
+
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+
+    const currentSrc = audioSourceRef.current;
+    const baseUrl = STREAMS[currentSrc].split('?')[0];
+    audio.src = `${baseUrl}?nocache=${Date.now()}`;
+    audio.preload = 'auto';
+    audio.load();
+
+    audio.play()
+      .then(() => {
+        setPlaying(true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Falha ao reconectar:', err);
+        setLoading(false);
+        setPlaying(false);
+      });
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    let retryTimer: number;
+    let stallTimer: number;
 
     const handleStreamStall = () => {
       if (radioReconnectWantedRef.current) {
-        clearTimeout(retryTimer);
-        retryTimer = window.setTimeout(() => {
+        clearTimeout(stallTimer);
+        stallTimer = window.setTimeout(() => {
           if (audio.paused || audio.readyState < 3) {
-            console.warn('Corte de emissão detetado. A resetar ligação e reconectar...');
-            setLoading(true);
-
-            audio.pause();
-            audio.removeAttribute('src');
-            audio.load();
-
-            const currentSrc = audioSourceRef.current;
-            const baseUrl = STREAMS[currentSrc].split('?')[0];
-            audio.src = `${baseUrl}?nocache=${Date.now()}`;
-            audio.preload = 'auto';
-            audio.load();
-
-            audio.play()
-              .then(() => {
-                setPlaying(true);
-                setLoading(false);
-              })
-              .catch((err) => {
-                console.error('Falha ao reconectar:', err);
-                setLoading(false);
-              });
+            forceReconnectStream();
           }
-        }, 2000);
+        }, 1500);
       }
     };
 
@@ -212,37 +220,41 @@ export default function App() {
     return () => {
       audio.removeEventListener('stalled', handleStreamStall);
       audio.removeEventListener('error', handleStreamStall);
-      clearTimeout(retryTimer);
+      clearTimeout(stallTimer);
     };
-  }, []);
+  }, [forceReconnectStream]);
 
   /* =========================================================
-     RETOMAR EMISSÃO AUTOMATICAMENTE APÓS SAIR DAS REDES SOCIAIS
+     MONITORIZAÇÃO DE BUFFER CONGELADO (HEARTBEAT)
      ========================================================= */
   useEffect(() => {
-    const handleVisibilityChange = async () => {
+    const interval = window.setInterval(() => {
+      const audio = audioRef.current;
+      if (!audio || !playing || !radioReconnectWantedRef.current) return;
+
+      // Se devia estar a tocar mas o tempo no leitor congelou
+      if (audio.currentTime === lastTimeRef.current && !audio.paused) {
+        console.warn('Stream congelado em silêncio. A forçar reconexão...');
+        forceReconnectStream();
+      } else {
+        lastTimeRef.current = audio.currentTime;
+      }
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, [playing, forceReconnectStream]);
+
+  /* =========================================================
+     RETOMAR EMISSÃO INSTANTANEAMENTE AO VOLTAR À APP
+     ========================================================= */
+  useEffect(() => {
+    const handleVisibilityChange = () => {
       const audio = audioRef.current;
       if (!audio) return;
 
       if (document.visibilityState === 'visible' && radioReconnectWantedRef.current) {
-        if (audio.paused) {
-          try {
-            console.log('A retomar emissão automaticamente ao voltar à app...');
-            setLoading(true);
-            await audio.play();
-            setPlaying(true);
-            setLoading(false);
-          } catch (err) {
-            console.error('Erro ao retomar emissão automaticamente:', err);
-            const currentSrc = audioSourceRef.current;
-            const baseUrl = STREAMS[currentSrc].split('?')[0];
-            audio.src = `${baseUrl}?nocache=${Date.now()}`;
-            audio.load();
-            audio.play().then(() => {
-              setPlaying(true);
-              setLoading(false);
-            }).catch(() => setLoading(false));
-          }
+        if (audio.paused || audio.readyState < 3) {
+          forceReconnectStream();
         }
       }
     };
@@ -251,7 +263,7 @@ export default function App() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [forceReconnectStream]);
 
   /* =========================================================
      RADAR MUSICAL — CARREGAR NOTÍCIAS (A CADA 1 HORA)
@@ -283,7 +295,6 @@ export default function App() {
 
   const cancelRadioReconnect = useCallback(() => {
     radioReconnectWantedRef.current = false;
-    radioReconnectAttemptRef.current = 0;
 
     if (radioReconnectTimerRef.current !== null) {
       window.clearTimeout(radioReconnectTimerRef.current);
@@ -306,7 +317,6 @@ export default function App() {
         window.clearTimeout(radioReconnectTimerRef.current);
         radioReconnectTimerRef.current = null;
       }
-      radioReconnectAttemptRef.current = 0;
       setPlaying(true);
       setLoading(false);
     };
@@ -420,7 +430,6 @@ export default function App() {
         audio.load();
 
         radioReconnectWantedRef.current = true;
-        radioReconnectAttemptRef.current = 0;
 
         await audio.play();
         setPlaying(true);
@@ -479,8 +488,7 @@ export default function App() {
   const formatTime = (seconds: number) => {
     const safeSeconds = Math.max(0, Math.floor(seconds));
     const minutes = Math.floor(safeSeconds / 60);
-    const remainingSeconds = safeSeconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${(safeSeconds % 60).toString().padStart(2, '0')}`;
   };
 
   const totalDuration = songElapsed + songRemaining;
