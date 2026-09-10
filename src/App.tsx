@@ -231,38 +231,47 @@ export default function App() {
     let retryTimer: number;
 
     const handleStreamStall = () => {
-      // Só tenta reconectar se a rádio estiver paused/stalled por mais de 3 segundos
-      // para evitar estalidos e cortes em micro-interrupções normais de buffer
       if (radioReconnectWantedRef.current && audioSourceRef.current === 'marcoense') {
         clearTimeout(retryTimer);
         retryTimer = window.setTimeout(() => {
           if (audio.paused || audio.readyState < 3) {
-            console.warn('Corte de emissão confirmado. A reconectar ao stream...');
+            console.warn('Corte de emissão detetado. A resetar ligação e reconectar...');
             setLoading(true);
 
-            const baseUrl = STREAMS.marcoense.split('?')[0];
+            // 1. Força a paragem e limpa a sessão antiga presa na memória do browser
             audio.pause();
-            audio.src = `${baseUrl}?nocache=${Date.now()}`;
+            audio.removeAttribute('src');
             audio.load();
+
+            // 2. Cria uma nova ligação limpa com timestamp para ignorar a cache
+            const baseUrl = STREAMS.marcoense.split('?')[0];
+            audio.src = `${baseUrl}?nocache=${Date.now()}`;
+            audio.preload = 'auto';
+            audio.load();
+
+            // 3. Tenta retomar a emissão
             audio.play()
               .then(() => {
                 setPlaying(true);
                 setLoading(false);
                 setError(false);
               })
-              .catch(() => {
+              .catch((err) => {
+                console.error('Falha ao reconectar:', err);
                 setLoading(false);
                 setError(true);
               });
           }
-        }, 3000);
+        }, 2000);
       }
     };
 
     audio.addEventListener('stalled', handleStreamStall);
+    audio.addEventListener('error', handleStreamStall);
 
     return () => {
       audio.removeEventListener('stalled', handleStreamStall);
+      audio.removeEventListener('error', handleStreamStall);
       clearTimeout(retryTimer);
     };
   }, []);
