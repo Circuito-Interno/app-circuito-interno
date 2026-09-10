@@ -387,50 +387,47 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
 /* =========================================================
-     MEDIA SESSION API — LOCK SCREEN (CORREÇÃO DE BORDAS E BOTÕES)
+     MEDIA SESSION API — LOCK SCREEN PERFECT MATCH
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    const updateMediaSession = () => {
-      if (audioSource === 'circuito') {
-        const songInfo = nowPlaying?.artist && nowPlaying?.title
-          ? `${nowPlaying.artist} • ${nowPlaying.title}`
-          : 'Música que cria momentos';
+    const songInfo = audioSource === 'circuito'
+      ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
+      : '93.3 FM • Emissão Regional';
 
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: 'Circuito Interno',
-          artist: songInfo,
-          album: 'Rádio Online',
-          artwork: [
-            { src: '/icons/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' },
-            { src: '/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' }
-          ],
-        });
-      } else {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: 'Rádio Marcoense',
-          artist: '93.3 FM • Emissão Regional',
-          album: 'Rádio Local',
-          artwork: [
-            { src: '/icons/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' },
-            { src: '/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' }
-          ],
-        });
-      }
+    const stationTitle = audioSource === 'circuito' ? 'Circuito Interno' : 'Rádio Marcoense';
 
-      // Forçar explicitamente a remoção dos botões de 10s no iOS
-      try {
-        navigator.mediaSession.setActionHandler('seekbackward', null);
-        navigator.mediaSession.setActionHandler('seekforward', null);
-        navigator.mediaSession.setActionHandler('previoustrack', null);
-        navigator.mediaSession.setActionHandler('nexttrack', null);
-      } catch (e) {
-        console.error('Erro ao ajustar botões da MediaSession:', e);
-      }
-    };
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: stationTitle,
+      artist: songInfo,
+      album: audioSource === 'circuito' ? 'Rádio Online' : 'Rádio Local',
+      artwork: [
+        { src: '/icons/artwork-solid.png?v=30', sizes: '512x512', type: 'image/png' },
+        { src: '/artwork-solid.png?v=30', sizes: '512x512', type: 'image/png' },
+      ],
+    });
 
-    updateMediaSession();
+    // Desativar obrigatoriamente os controlos de andar 10s para tras/frente
+    try {
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+    } catch (e) {
+      console.warn('MediaSession action handler error:', e);
+    }
+
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (audioRef.current) void audioRef.current.play();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (audioRef.current) audioRef.current.pause();
+      });
+    } catch (e) {
+      console.warn('MediaSession play/pause error:', e);
+    }
   }, [audioSource, nowPlaying, playing]);
 
   /* =========================================================
