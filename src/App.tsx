@@ -85,7 +85,7 @@ const STREAMS: Record<AudioSource, string> = {
     'https://azuracast.rhoster.pt/listen/circuito_interno/radio.mp3',
 
   marcoense:
-    'https://stream.ips.pt/marcoense',
+    'https://streaming.shoutcast.com/marcoense-fm',
 };
 
 const NOW_PLAYING_URL =
