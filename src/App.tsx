@@ -387,54 +387,51 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
 /* =========================================================
-     MEDIA SESSION API — LOCK SCREEN FORMATADO COM SCROLL
+     MEDIA SESSION API — LOCK SCREEN (CORREÇÃO DE BORDAS E BOTÕES)
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    if (audioSource === 'circuito') {
-      const songInfo = nowPlaying?.artist && nowPlaying?.title
-        ? `${nowPlaying.artist} • ${nowPlaying.title}`
-        : 'Música que cria momentos';
+    const updateMediaSession = () => {
+      if (audioSource === 'circuito') {
+        const songInfo = nowPlaying?.artist && nowPlaying?.title
+          ? `${nowPlaying.artist} • ${nowPlaying.title}`
+          : 'Música que cria momentos';
 
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Circuito Interno',
-        artist: songInfo,
-        album: 'Rádio Online',
-        artwork: [
-          { src: '/icons/artwork-solid.png', sizes: '512x512', type: 'image/png' },
-        ],
-      });
-    } else {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Rádio Marcoense',
-        artist: '93.3 FM • Emissão Regional',
-        album: 'Rádio Local',
-        artwork: [
-          { src: '/icons/artwork-solid.png', sizes: '512x512', type: 'image/png' },
-        ],
-      });
-    }
-
-    // Remoção dos botões de 10 segundos no leitor
-    navigator.mediaSession.setActionHandler('seekbackward', null);
-    navigator.mediaSession.setActionHandler('seekforward', null);
-    navigator.mediaSession.setActionHandler('previoustrack', null);
-    navigator.mediaSession.setActionHandler('nexttrack', null);
-
-    // Mapeamento dos botões Play / Pause
-    navigator.mediaSession.setActionHandler('play', () => {
-      if (audioRef.current) {
-        void audioRef.current.play();
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: 'Circuito Interno',
+          artist: songInfo,
+          album: 'Rádio Online',
+          artwork: [
+            { src: '/icons/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' },
+            { src: '/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' }
+          ],
+        });
+      } else {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: 'Rádio Marcoense',
+          artist: '93.3 FM • Emissão Regional',
+          album: 'Rádio Local',
+          artwork: [
+            { src: '/icons/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' },
+            { src: '/artwork-solid.png?v=2', sizes: '512x512', type: 'image/png' }
+          ],
+        });
       }
-    });
 
-    navigator.mediaSession.setActionHandler('pause', () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      // Forçar explicitamente a remoção dos botões de 10s no iOS
+      try {
+        navigator.mediaSession.setActionHandler('seekbackward', null);
+        navigator.mediaSession.setActionHandler('seekforward', null);
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      } catch (e) {
+        console.error('Erro ao ajustar botões da MediaSession:', e);
       }
-    });
-  }, [audioSource, nowPlaying]);
+    };
+
+    updateMediaSession();
+  }, [audioSource, nowPlaying, playing]);
 
   /* =========================================================
      CONTROLO DE REPRODUÇÃO
