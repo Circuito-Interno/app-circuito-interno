@@ -584,15 +584,16 @@ export default function App() {
         } transition-colors duration-500 font-sans pb-12`}
       >
         {/* HEADER */}
-        <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#080808]/85 backdrop-blur-2xl">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 h-[68px] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                <Radio className="w-5 h-5 text-white" />
-                {playing && (
-                  <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-green-400 border-2 border-[#080808]" />
-                )}
-              </div>
+<header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#080808]/85 backdrop-blur-2xl">
+  <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 h-[68px] flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      {/* LOCALIZAÇÃO EXACTA 1 */}
+      <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+        <Radio className="w-5 h-5 text-black" />
+        {playing && (
+          <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-green-400 border-2 border-[#080808]" />
+        )}
+      </div>
 
               <div className="text-left">
                 <div className="font-black tracking-[-0.03em] text-sm sm:text-base leading-none">
@@ -713,118 +714,118 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
             
             {/* CAIXA 1: RÁDIO CIRCUITO INTERNO */}
-            <div
-              onClick={() => toggleBox('circuito')}
-              className={`relative overflow-hidden rounded-[28px] lg:col-span-7 border border-white/[0.08] bg-[#111] p-6 sm:p-8 cursor-pointer transition-all duration-300 ${
-                expandedBox === 'circuito'
-                  ? 'border-orange-500/50 shadow-2xl shadow-orange-500/10 ring-1 ring-orange-500/20'
-                  : 'hover:border-white/20'
-              }`}
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,115,0,0.15),transparent_45%)]" />
+<div
+  onClick={() => toggleBox('circuito')}
+  className={`relative overflow-hidden rounded-[28px] lg:col-span-7 border border-white/[0.08] bg-[#111] p-6 sm:p-8 cursor-pointer transition-all duration-300 ${
+    expandedBox === 'circuito'
+      ? 'border-orange-500/50 shadow-2xl shadow-orange-500/10 ring-1 ring-orange-500/20'
+      : 'hover:border-white/20'
+  }`}
+>
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,115,0,0.15),transparent_45%)]" />
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                      <Radio className="w-6 h-6 text-black" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-orange-400">
-                        Rádio Online
-                      </div>
-                      <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
-                        Circuito Interno
-                      </h3>
-                    </div>
-                  </div>
+  <div className="relative z-10">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+          <Radio className="w-6 h-6 text-black" />
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-orange-400">
+            Rádio Online
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+            Circuito Interno
+          </h3>
+        </div>
+      </div>
 
-                  <div className="flex items-center gap-3">
-                    {playing && audioSource === 'circuito' && (
-                      <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] font-bold text-green-400">
-                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        A Tocar
-                      </span>
-                    )}
-                    <span className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400">
-                      {expandedBox === 'circuito' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </span>
-                  </div>
+      <div className="flex items-center gap-3">
+        {playing && audioSource === 'circuito' && (
+          <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] font-bold text-green-400">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            A Tocar
+          </span>
+        )}
+        <span className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400">
+          {expandedBox === 'circuito' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </span>
+      </div>
+    </div>
+
+    {expandedBox === 'circuito' ? (
+      <div className="mt-6 pt-6 border-t border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
+        {nowPlaying ? (
+          <div className="mb-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 sm:p-5 flex gap-4 items-center">
+            {nowPlaying.art ? (
+              <img src={nowPlaying.art} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0" />
+            ) : null}
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-orange-400 mb-1">
+                A tocar agora
+              </div>
+              <div className="text-base sm:text-lg font-bold truncate">{nowPlaying.title}</div>
+              <div className="text-xs sm:text-sm text-zinc-400 truncate">{nowPlaying.artist}</div>
+
+              <div className="mt-3">
+                <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
+                  <span>{formatTime(songElapsed)}</span>
+                  <span>-{formatTime(songRemaining)}</span>
                 </div>
-
-                {expandedBox === 'circuito' ? (
-                  <div className="mt-6 pt-6 border-t border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
-                    {nowPlaying ? (
-                      <div className="mb-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 sm:p-5 flex gap-4 items-center">
-                        {nowPlaying.art ? (
-                          <img src={nowPlaying.art} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0" />
-                        ) : null}
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-orange-400 mb-1">
-                            A tocar agora
-                          </div>
-                          <div className="text-base sm:text-lg font-bold truncate">{nowPlaying.title}</div>
-                          <div className="text-xs sm:text-sm text-zinc-400 truncate">{nowPlaying.artist}</div>
-
-                          <div className="mt-3">
-                            <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
-                              <span>{formatTime(songElapsed)}</span>
-                              <span>-{formatTime(songRemaining)}</span>
-                            </div>
-                            <div className="h-1 bg-white/[0.08] rounded-full overflow-hidden">
-                              <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-zinc-400 mb-6">Música selecionada para ouvir sem interrupções, 24 horas por dia.</p>
-                    )}
-
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <button
-                          type="button"
-                          onClick={(e) => togglePlaySource('circuito', e)}
-                          disabled={loading && audioSource === 'circuito'}
-                          className="w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-400 text-black flex items-center justify-center shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
-                          aria-label="Tocar Rádio Circuito Interno"
-                        >
-                          {playing && audioSource === 'circuito' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
-                        </button>
-                        <div>
-                          <div className="text-xs font-bold">
-                            {playing && audioSource === 'circuito' ? '● EM EMISSÃO' : 'Iniciar Emissão'}
-                          </div>
-                          <div className="text-[10px] text-zinc-500">
-                            {loading && audioSource === 'circuito' ? 'A ligar...' : '24 Horas no Ar'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {!carMode && (
-                        <div className="flex items-center gap-2 max-w-[140px]">
-                          <button type="button" onClick={toggleMute} className="text-zinc-400 hover:text-white">
-                            {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                          </button>
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={muted ? 0 : volume}
-                            onChange={handleVolumeChange}
-                            className="w-full accent-orange-500"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-zinc-500 mt-2">Clique na caixa para abrir o player da rádio</p>
-                )}
+                <div className="h-1 bg-white/[0.08] rounded-full overflow-hidden">
+                  <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+                </div>
               </div>
             </div>
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-400 mb-6">Música selecionada para ouvir sem interrupções, 24 horas por dia.</p>
+        )}
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={(e) => togglePlaySource('circuito', e)}
+              disabled={loading && audioSource === 'circuito'}
+              className="w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-400 text-black flex items-center justify-center shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+              aria-label="Tocar Rádio Circuito Interno"
+            >
+              {playing && audioSource === 'circuito' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+            </button>
+            <div>
+              <div className="text-xs font-bold">
+                {playing && audioSource === 'circuito' ? '● EM EMISSÃO' : 'Iniciar Emissão'}
+              </div>
+              <div className="text-[10px] text-zinc-500">
+                {loading && audioSource === 'circuito' ? 'A ligar...' : '24 Horas no Ar'}
+              </div>
+            </div>
+          </div>
+
+          {!carMode && (
+            <div className="flex items-center gap-2 max-w-[140px]">
+              <button type="button" onClick={toggleMute} className="text-zinc-400 hover:text-white">
+                {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={muted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className="w-full accent-orange-500"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    ) : (
+      <p className="text-xs text-zinc-500 mt-2">Clique na caixa para abrir o player da rádio</p>
+    )}
+  </div>
+</div>
 
             {/* CAIXA 2: RÁDIO MARCOENSE */}
             <div
