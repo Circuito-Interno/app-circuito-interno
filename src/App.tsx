@@ -15,7 +15,7 @@ import {
   Car,
   Moon,
   Sun,
-  ArrowLeft,
+  ChevronDown,
   ChevronRight,
   MessageCircle,
 } from 'lucide-react';
@@ -30,11 +30,6 @@ type AudioSource =
 
 type PlayerMode =
   | 'radio';
-
-type AppSection =
-  | 'home'
-  | 'circuito'
-  | 'marcoense';
 
 interface NowPlayingSong {
   id: string;
@@ -132,97 +127,48 @@ const SCHEDULE: ScheduleItem[] = [
    ========================================================= */
 
 export default function App() {
-  const audioRef =
-    useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const playerModeRef =
-    useRef<PlayerMode>('radio');
+  const playerModeRef = useRef<PlayerMode>('radio');
+  const audioSourceRef = useRef<AudioSource>('circuito');
+  const volumeRef = useRef(0.8);
+  const mutedRef = useRef(false);
 
-  const audioSourceRef =
-    useRef<AudioSource>('circuito');
+  const radioReconnectTimerRef = useRef<number | null>(null);
+  const radioReconnectWantedRef = useRef(false);
+  const radioReconnectAttemptRef = useRef(0);
 
-  const volumeRef =
-    useRef(0.8);
+  /* =======================================================
+     ESTADOS
+     ======================================================= */
 
-  const mutedRef =
-    useRef(false);
+  const [expandedBox, setExpandedBox] = useState<AudioSource | null>('circuito');
 
-  const radioReconnectTimerRef =
-    useRef<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [muted, setMuted] = useState(false);
+  const [audioSource, setAudioSource] = useState<AudioSource>('circuito');
+  const [playerMode, setPlayerMode] = useState<PlayerMode>('radio');
 
-  const radioReconnectWantedRef =
-    useRef(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [carMode, setCarMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
-  const radioReconnectAttemptRef =
-    useRef(0);
+  const [nowPlaying, setNowPlaying] = useState<NowPlayingSong | null>(null);
+  const [nextSong, setNextSong] = useState<NowPlayingSong | null>(null);
+  const [songElapsed, setSongElapsed] = useState(0);
+  const [songRemaining, setSongRemaining] = useState(0);
 
-  const [section, setSection] =
-    useState<AppSection>('home');
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
 
-  const [playing, setPlaying] =
-    useState(false);
-
-  const [volume, setVolume] =
-    useState(0.8);
-
-  const [muted, setMuted] =
-    useState(false);
-
-  const [audioSource, setAudioSource] =
-    useState<AudioSource>('circuito');
-
-  const [playerMode, setPlayerMode] =
-    useState<PlayerMode>('radio');
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState(false);
-
-  const [carMode, setCarMode] =
-    useState(false);
-
-  const [darkMode, setDarkMode] =
-    useState(true);
-
-  const [nowPlaying, setNowPlaying] =
-    useState<NowPlayingSong | null>(null);
-
-  const [nextSong, setNextSong] =
-    useState<NowPlayingSong | null>(null);
-
-  const [songElapsed, setSongElapsed] =
-    useState(0);
-
-  const [songRemaining, setSongRemaining] =
-    useState(0);
-
-  const [newsItems, setNewsItems] =
-    useState<NewsItem[]>([]);
-
-  useEffect(() => {
-    playerModeRef.current =
-      playerMode;
-  }, [playerMode]);
-
-  useEffect(() => {
-    audioSourceRef.current =
-      audioSource;
-  }, [audioSource]);
-
-  useEffect(() => {
-    volumeRef.current =
-      volume;
-  }, [volume]);
-
-  useEffect(() => {
-    mutedRef.current =
-      muted;
-  }, [muted]);
+  useEffect(() => { playerModeRef.current = playerMode; }, [playerMode]);
+  useEffect(() => { audioSourceRef.current = audioSource; }, [audioSource]);
+  useEffect(() => { volumeRef.current = volume; }, [volume]);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   /* =========================================================
-     RECONEXÃO AUTOMÁTICA EM CASO DE CORTE DO SERVIDOR (IPS)
+     RECONEXÃO AUTOMÁTICA EM CASO DE CORTE DO SERVIDOR
      ========================================================= */
   useEffect(() => {
     const audio = audioRef.current;
@@ -231,7 +177,7 @@ export default function App() {
     let retryTimer: number;
 
     const handleStreamStall = () => {
-      if (radioReconnectWantedRef.current && audioSourceRef.current === 'marcoense') {
+      if (radioReconnectWantedRef.current) {
         clearTimeout(retryTimer);
         retryTimer = window.setTimeout(() => {
           if (audio.paused || audio.readyState < 3) {
@@ -242,7 +188,8 @@ export default function App() {
             audio.removeAttribute('src');
             audio.load();
 
-            const baseUrl = STREAMS.marcoense.split('?')[0];
+            const currentSrc = audioSourceRef.current;
+            const baseUrl = STREAMS[currentSrc].split('?')[0];
             audio.src = `${baseUrl}?nocache=${Date.now()}`;
             audio.preload = 'auto';
             audio.load();
@@ -274,18 +221,31 @@ export default function App() {
   }, []);
 
   /* =========================================================
-     RETOMAR EMISSÃO AO REGRESSAR À APP
+     RETOMAR EMISSÃO AUTOMATICAMENTE APÓS SAIR DAS REDES SOCIAIS
      ========================================================= */
   useEffect(() => {
     const handleVisibilityChange = async () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
       if (document.visibilityState === 'visible' && radioReconnectWantedRef.current) {
-        const audio = audioRef.current;
-        if (audio && audio.paused) {
+        if (audio.paused) {
           try {
+            console.log('A retomar emissão automaticamente ao voltar à app...');
+            setLoading(true);
             await audio.play();
             setPlaying(true);
+            setLoading(false);
           } catch (err) {
             console.error('Erro ao retomar emissão automaticamente:', err);
+            const currentSrc = audioSourceRef.current;
+            const baseUrl = STREAMS[currentSrc].split('?')[0];
+            audio.src = `${baseUrl}?nocache=${Date.now()}`;
+            audio.load();
+            audio.play().then(() => {
+              setPlaying(true);
+              setLoading(false);
+            }).catch(() => setLoading(false));
           }
         }
       }
@@ -305,690 +265,243 @@ export default function App() {
 
     const loadNews = async () => {
       try {
-        const response =
-          await fetch('/api/news');
+        const response = await fetch('/api/news');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(
-            `HTTP ${response.status}`
-          );
+        if (!cancelled && Array.isArray(data.items)) {
+          setNewsItems(data.items);
         }
-
-        const data =
-          await response.json();
-
-        if (
-          !cancelled &&
-          Array.isArray(data.items)
-        ) {
-          setNewsItems(
-            data.items
-          );
-        }
-      } catch (error) {
-        console.error(
-          'Erro ao carregar Radar Musical:',
-          error
-        );
+      } catch (err) {
+        console.error('Erro ao carregar Radar Musical:', err);
       }
     };
 
     loadNews();
-
-    const interval =
-      window.setInterval(
-        loadNews,
-        60 * 60 * 1000
-      );
-
+    const interval = window.setInterval(loadNews, 60 * 60 * 1000);
     return () => {
       cancelled = true;
-      window.clearInterval(
-        interval
-      );
+      window.clearInterval(interval);
     };
   }, []);
 
-  const cancelRadioReconnect =
-    useCallback(() => {
-      radioReconnectWantedRef.current =
-        false;
+  const cancelRadioReconnect = useCallback(() => {
+    radioReconnectWantedRef.current = false;
+    radioReconnectAttemptRef.current = 0;
 
-      radioReconnectAttemptRef.current =
-        0;
-
-      if (
-        radioReconnectTimerRef.current !==
-        null
-      ) {
-        window.clearTimeout(
-          radioReconnectTimerRef.current
-        );
-
-        radioReconnectTimerRef.current =
-          null;
-      }
-    }, []);
+    if (radioReconnectTimerRef.current !== null) {
+      window.clearTimeout(radioReconnectTimerRef.current);
+      radioReconnectTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    const audio =
-      audioRef.current;
-
+    const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume =
-      volumeRef.current;
+    audio.volume = volumeRef.current;
+    audio.muted = mutedRef.current;
 
-    audio.muted =
-      mutedRef.current;
-
-    const handlePlay = () => {
-      setPlaying(true);
-      setLoading(false);
-      setError(false);
-    };
-
-    const handlePause = () => {
-      setPlaying(false);
-      setLoading(false);
-    };
-
-    const handleWaiting = () => {
-      setLoading(true);
-    };
-
+    const handlePlay = () => { setPlaying(true); setLoading(false); setError(false); };
+    const handlePause = () => { setPlaying(false); setLoading(false); };
+    const handleWaiting = () => { setLoading(true); };
     const handlePlaying = () => {
-      if (
-        radioReconnectTimerRef.current !==
-        null
-      ) {
-        window.clearTimeout(
-          radioReconnectTimerRef.current
-        );
-
-        radioReconnectTimerRef.current =
-          null;
+      if (radioReconnectTimerRef.current !== null) {
+        window.clearTimeout(radioReconnectTimerRef.current);
+        radioReconnectTimerRef.current = null;
       }
-
-      radioReconnectAttemptRef.current =
-        0;
-
+      radioReconnectAttemptRef.current = 0;
       setPlaying(true);
       setLoading(false);
       setError(false);
     };
+    const handleError = () => { setPlaying(false); setLoading(false); setError(true); };
 
-    const handleError = () => {
-      setPlaying(false);
-      setLoading(false);
-      setError(true);
-    };
-
-    audio.addEventListener(
-      'play',
-      handlePlay
-    );
-
-    audio.addEventListener(
-      'pause',
-      handlePause
-    );
-
-    audio.addEventListener(
-      'waiting',
-      handleWaiting
-    );
-
-    audio.addEventListener(
-      'playing',
-      handlePlaying
-    );
-
-    audio.addEventListener(
-      'error',
-      handleError
-    );
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('playing', handlePlaying);
+    audio.addEventListener('error', handleError);
 
     return () => {
-      audio.removeEventListener(
-        'play',
-        handlePlay
-      );
-
-      audio.removeEventListener(
-        'pause',
-        handlePause
-      );
-
-      audio.removeEventListener(
-        'waiting',
-        handleWaiting
-      );
-
-      audio.removeEventListener(
-        'playing',
-        handlePlaying
-      );
-
-      audio.removeEventListener(
-        'error',
-        handleError
-      );
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('playing', handlePlaying);
+      audio.removeEventListener('error', handleError);
     };
   }, []);
 
   useEffect(() => {
-    const audio =
-      audioRef.current;
-
+    const audio = audioRef.current;
     if (!audio) return;
+    audio.volume = volume;
+    audio.muted = muted;
+  }, [volume, muted]);
 
-    audio.volume =
-      volume;
-
-    audio.muted =
-      muted;
-  }, [
-    volume,
-    muted,
-  ]);
-
+  /* =========================================================
+     NOW PLAYING — AZURACAST
+     ========================================================= */
   useEffect(() => {
-    if (
-      playerMode !== 'radio' ||
-      audioSource !== 'circuito'
-    ) {
+    if (playerMode !== 'radio' || audioSource !== 'circuito') {
       setNowPlaying(null);
       setNextSong(null);
       setSongElapsed(0);
       setSongRemaining(0);
-
       return;
     }
 
-    let cancelled =
-      false;
+    let cancelled = false;
 
-    const fetchNowPlaying =
-      async () => {
-        try {
-          const response =
-            await fetch(
-              `${NOW_PLAYING_URL}?_=${Date.now()}`,
-              {
-                cache: 'no-store',
-              }
-            );
+    const fetchNowPlaying = async () => {
+      try {
+        const response = await fetch(`${NOW_PLAYING_URL}?_=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = (await response.json()) as NowPlayingData;
 
-          if (!response.ok) {
-            throw new Error(
-              `Now Playing HTTP ${response.status}`
-            );
-          }
-
-          const data =
-            (await response.json()) as NowPlayingData;
-
-          if (cancelled) return;
-
-          setNowPlaying(
-            data.now_playing?.song ??
-              null
-          );
-
-          setNextSong(
-            data.playing_next?.song ??
-              null
-          );
-
-          setSongElapsed(
-            data.now_playing?.elapsed ??
-              0
-          );
-
-          setSongRemaining(
-            data.now_playing?.remaining ??
-              0
-          );
-        } catch (err) {
-          console.error(
-            'Erro ao obter Now Playing do AzuraCast:',
-            err
-          );
-        }
-      };
+        if (cancelled) return;
+        setNowPlaying(data.now_playing?.song ?? null);
+        setNextSong(data.playing_next?.song ?? null);
+        setSongElapsed(data.now_playing?.elapsed ?? 0);
+        setSongRemaining(data.now_playing?.remaining ?? 0);
+      } catch (err) {
+        console.error('Erro no AzuraCast:', err);
+      }
+    };
 
     void fetchNowPlaying();
-
-    const interval =
-      window.setInterval(
-        () => {
-          void fetchNowPlaying();
-        },
-        10000
-      );
-
-    return () => {
-      cancelled = true;
-
-      window.clearInterval(
-        interval
-      );
-    };
-  }, [
-    playerMode,
-    audioSource,
-  ]);
+    const interval = window.setInterval(() => { void fetchNowPlaying(); }, 10000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [playerMode, audioSource]);
 
   useEffect(() => {
-    if (
-      !playing ||
-      playerMode !== 'radio' ||
-      audioSource !== 'circuito'
-    ) {
-      return;
-    }
+    if (!playing || playerMode !== 'radio' || audioSource !== 'circuito') return;
+    const interval = window.setInterval(() => {
+      setSongElapsed((v) => v + 1);
+      setSongRemaining((v) => (v > 0 ? v - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [playing, playerMode, audioSource]);
 
-    const interval =
-      window.setInterval(
-        () => {
-          setSongElapsed(
-            (value) =>
-              value + 1
-          );
-
-          setSongRemaining(
-            (value) =>
-              value > 0
-                ? value - 1
-                : 0
-          );
-        },
-        1000
-      );
-
-    return () => {
-      window.clearInterval(
-        interval
-      );
-    };
-  }, [
-    playing,
-    playerMode,
-    audioSource,
-  ]);
-
-  const playSource =
-    useCallback(
-      async (
-        source: AudioSource
-      ) => {
-        const audio =
-          audioRef.current;
-
-        if (!audio) return;
-
-        setLoading(true);
-        setError(false);
-
-        try {
-          playerModeRef.current =
-            'radio';
-
-          setPlayerMode(
-            'radio'
-          );
-
-          if (
-            source !== 'marcoense'
-          ) {
-            cancelRadioReconnect();
-          }
-
-          const sourceUrl =
-            STREAMS[source];
-
-          const currentSource =
-            audio.getAttribute(
-              'src'
-            );
-
-          const hasCurrentSource =
-            currentSource ===
-            sourceUrl;
-
-          if (
-            audioSourceRef.current ===
-              source &&
-            hasCurrentSource
-          ) {
-            if (
-              audio.paused
-            ) {
-              radioReconnectWantedRef.current =
-                source === 'marcoense';
-
-              await audio.play();
-
-              setPlaying(
-                true
-              );
-            } else {
-              radioReconnectWantedRef.current =
-                false;
-
-              if (
-                radioReconnectTimerRef.current !==
-                null
-              ) {
-                window.clearTimeout(
-                  radioReconnectTimerRef.current
-                );
-
-                radioReconnectTimerRef.current =
-                  null;
-              }
-
-              audio.pause();
-
-              setPlaying(
-                false
-              );
-            }
-
-            setLoading(false);
-
-            return;
-          }
-
-          audio.pause();
-
-          audio.removeAttribute(
-            'src'
-          );
-
-          audio.load();
-
-          audioSourceRef.current =
-            source;
-
-          setAudioSource(
-            source
-          );
-
-          audio.src =
-            sourceUrl;
-
-          audio.preload =
-            'auto';
-
-          audio.volume =
-            volumeRef.current;
-
-          audio.muted =
-            mutedRef.current;
-
-          audio.load();
-
-          radioReconnectWantedRef.current =
-            source === 'marcoense';
-
-          radioReconnectAttemptRef.current =
-            0;
-
-          await audio.play();
-
-          setPlaying(true);
-          setLoading(false);
-          setError(false);
-        } catch (err) {
-          console.error(
-            'Erro ao iniciar o stream:',
-            err
-          );
-
-          setPlaying(false);
-          setLoading(false);
-          setError(true);
-
-          if (
-            source === 'marcoense'
-          ) {
-            radioReconnectWantedRef.current =
-              true;
-          }
-        }
-      },
-      [
-        cancelRadioReconnect,
-      ]
-    );
-
-  const togglePlay =
-    async () => {
-      const audio =
-        audioRef.current;
-
+  /* =========================================================
+     CONTROLO DE REPRODUÇÃO
+     ========================================================= */
+  const playSource = useCallback(
+    async (source: AudioSource) => {
+      const audio = audioRef.current;
       if (!audio) return;
 
-      if (!audio.paused) {
-        radioReconnectWantedRef.current =
-          false;
+      setLoading(true);
+      setError(false);
 
-        if (
-          radioReconnectTimerRef.current !==
-          null
-        ) {
-          window.clearTimeout(
-            radioReconnectTimerRef.current
-          );
+      try {
+        playerModeRef.current = 'radio';
+        setPlayerMode('radio');
 
-          radioReconnectTimerRef.current =
-            null;
+        const sourceUrl = STREAMS[source];
+        const currentSource = audio.getAttribute('src');
+
+        if (audioSourceRef.current === source && currentSource === sourceUrl) {
+          if (audio.paused) {
+            radioReconnectWantedRef.current = true;
+            await audio.play();
+            setPlaying(true);
+          } else {
+            radioReconnectWantedRef.current = false;
+            audio.pause();
+            setPlaying(false);
+          }
+          setLoading(false);
+          return;
         }
 
         audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
 
-        return;
+        audioSourceRef.current = source;
+        setAudioSource(source);
+        audio.src = sourceUrl;
+        audio.preload = 'auto';
+        audio.volume = volumeRef.current;
+        audio.muted = mutedRef.current;
+        audio.load();
+
+        radioReconnectWantedRef.current = true;
+        radioReconnectAttemptRef.current = 0;
+
+        await audio.play();
+        setPlaying(true);
+        setLoading(false);
+        setError(false);
+      } catch (err) {
+        console.error('Erro ao iniciar o stream:', err);
+        setPlaying(false);
+        setLoading(false);
+        setError(true);
+        radioReconnectWantedRef.current = true;
       }
+    },
+    [cancelRadioReconnect]
+  );
 
-      await playSource(
-        audioSourceRef.current
-      );
-    };
+  const togglePlaySource = async (source: AudioSource, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (audioSource === source && playing) {
+      const audio = audioRef.current;
+      if (audio) {
+        radioReconnectWantedRef.current = false;
+        audio.pause();
+      }
+      return;
+    }
+    await playSource(source);
+  };
 
-  const handleVolumeChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value =
-      Number(
-        e.target.value
-      );
+  const toggleBox = (source: AudioSource) => {
+    setExpandedBox((prev) => (prev === source ? null : source));
+  };
 
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
     setVolume(value);
-    volumeRef.current =
-      value;
+    volumeRef.current = value;
 
-    const audio =
-      audioRef.current;
-
+    const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume =
-      value;
-
-    if (value > 0) {
-      audio.muted =
-        false;
-
-      mutedRef.current =
-        false;
-
-      setMuted(false);
-    } else {
-      audio.muted =
-        true;
-
-      mutedRef.current =
-        true;
-
-      setMuted(true);
-    }
+    audio.volume = value;
+    audio.muted = value === 0;
+    mutedRef.current = value === 0;
+    setMuted(value === 0);
   };
 
-  const toggleMute = () => {
-    const audio =
-      audioRef.current;
-
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const audio = audioRef.current;
     if (!audio) return;
-
-    const newMuted =
-      !muted;
-
-    audio.muted =
-      newMuted;
-
-    mutedRef.current =
-      newMuted;
-
-    setMuted(
-      newMuted
-    );
+    const newMuted = !muted;
+    audio.muted = newMuted;
+    mutedRef.current = newMuted;
+    setMuted(newMuted);
   };
 
-  const openRadioSection = (
-    source: AudioSource
-  ) => {
-    const audio =
-      audioRef.current;
-
-    cancelRadioReconnect();
-
-    if (
-      audio &&
-      (
-        playerModeRef.current !==
-          'radio' ||
-        audioSourceRef.current !==
-          source
-      )
-    ) {
-      audio.pause();
-
-      audio.removeAttribute(
-        'src'
-      );
-
-      audio.load();
-
-      setPlaying(false);
-      setLoading(false);
-      setError(false);
-    }
-
-    playerModeRef.current =
-      'radio';
-
-    audioSourceRef.current =
-      source;
-
-    setPlayerMode(
-      'radio'
-    );
-
-    setAudioSource(
-      source
-    );
-
-    setSection(
-      source
-    );
+  const formatTime = (seconds: number) => {
+    const safeSeconds = Math.max(0, Math.floor(seconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const openSection = (
-    nextSection: AppSection
-  ) => {
-    if (
-      nextSection ===
-      'circuito'
-    ) {
-      openRadioSection(
-        'circuito'
-      );
-
-      return;
-    }
-
-    if (
-      nextSection ===
-      'marcoense'
-    ) {
-      openRadioSection(
-        'marcoense'
-      );
-
-      return;
-    }
-
-    setSection(
-      nextSection
-    );
-  };
-
-  const goHome = () => {
-    setSection(
-      'home'
-    );
-  };
-
-  const formatTime = (
-    seconds: number
-  ) => {
-    const safeSeconds =
-      Math.max(
-        0,
-        Math.floor(
-          seconds
-        )
-      );
-
-    const minutes =
-      Math.floor(
-        safeSeconds / 60
-      );
-
-    const remainingSeconds =
-      safeSeconds % 60;
-
-    return `${minutes}:${remainingSeconds
-      .toString()
-      .padStart(2, '0')}`;
-  };
-
-  const totalDuration =
-    songElapsed +
-    songRemaining;
-
-  const progress =
-    totalDuration > 0
-      ? Math.min(
-          100,
-          (songElapsed /
-            totalDuration) *
-            100
-        )
-      : 0;
+  const totalDuration = songElapsed + songRemaining;
+  const progress = totalDuration > 0 ? Math.min(100, (songElapsed / totalDuration) * 100) : 0;
 
   return (
     <>
       <style>{`
         @keyframes radarTicker {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(-50%);
-          }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
 
         .radar-ticker {
@@ -1025,25 +538,15 @@ export default function App() {
 
       <div
         className={`min-h-screen ${
-          darkMode
-            ? 'bg-[#080808] text-white'
-            : 'bg-zinc-100 text-zinc-900'
-        } transition-colors duration-500 font-sans`}
+          darkMode ? 'bg-[#080808] text-white' : 'bg-zinc-100 text-zinc-900'
+        } transition-colors duration-500 font-sans pb-12`}
       >
-        {/* =====================================================
-            HEADER
-            ===================================================== */}
-
+        {/* HEADER */}
         <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#080808]/85 backdrop-blur-2xl">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 h-[68px] flex items-center justify-between">
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-3 group"
-            >
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 via-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
                 <Radio className="w-5 h-5 text-white" />
-
                 {playing && (
                   <span className="absolute -right-1 -top-1 w-3 h-3 rounded-full bg-green-400 border-2 border-[#080808]" />
                 )}
@@ -1053,22 +556,16 @@ export default function App() {
                 <div className="font-black tracking-[-0.03em] text-sm sm:text-base leading-none">
                   RÁDIO CIRCUITO INTERNO
                 </div>
-
                 <div className="text-[9px] sm:text-[10px] text-orange-400 uppercase tracking-[0.2em] font-bold mt-1">
                   Música • Rádio
                 </div>
               </div>
-            </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  setCarMode(
-                    (value) =>
-                      !value
-                  )
-                }
+                onClick={() => setCarMode((v) => !v)}
                 className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-full text-[9px] sm:text-[10px] uppercase tracking-wider font-bold transition-all ${
                   carMode
                     ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20'
@@ -1082,692 +579,359 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setDarkMode(
-                    (value) =>
-                      !value
-                  )
-                }
+                onClick={() => setDarkMode((v) => !v)}
                 className="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.1] flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                 aria-label="Alterar tema"
               >
-                {darkMode ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             </div>
           </div>
         </header>
 
-        {/* =====================================================
-            MAIN
-            ===================================================== */}
+        {/* MAIN */}
+        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-12">
+          
+          {/* RADAR MUSICAL */}
+          <section className="mb-10 sm:mb-12">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              </span>
+              <span className="text-xs sm:text-sm uppercase tracking-[0.3em] font-black text-orange-400">
+                Radar Musical
+              </span>
+              <span className="text-xs text-zinc-500 uppercase tracking-wider">
+                Últimas notícias
+              </span>
+            </div>
 
-        <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10">
-
-          {/* ===================================================
-              HOME
-              =================================================== */}
-
-          {section === 'home' && (
-            <section className="py-10 sm:py-16 lg:py-24">
-
-              {/* =================================================
-                  RADAR MUSICAL (Apenas com títulos limpos e ponto)
-                  ================================================= */}
-
-              <section className="mb-10 sm:mb-14">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75 animate-ping" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-                  </span>
-
-                  <span className="text-xs sm:text-sm uppercase tracking-[0.3em] font-black text-orange-400">
-                    Radar Musical
-                  </span>
-
-                  <span className="text-xs text-zinc-500 uppercase tracking-wider">
-                    Últimas notícias
-                  </span>
+            <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)] min-h-[52px]">
+              <div className="flex items-center h-full">
+                <div className="shrink-0 flex items-center px-4 sm:px-5 py-4 bg-orange-500 text-black font-black text-xs uppercase tracking-[0.18em] z-10">
+                  RADAR
                 </div>
 
-                <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)] min-h-[52px]">
-                  <div className="flex items-center h-full">
-                    <div className="shrink-0 flex items-center px-4 sm:px-5 py-4 bg-orange-500 text-black font-black text-xs uppercase tracking-[0.18em] z-10">
-                      RADAR
-                    </div>
-
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                      {newsItems.length > 0 && (
-                        <div className="radar-ticker">
-                          <div className="radar-ticker-track">
-                            {newsItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
-                              >
-                                <span className="font-medium whitespace-nowrap">
-                                  {cleanNewsTitle(item.title)}
-                                </span>
-
-                                <span className="text-orange-500 font-bold text-sm">
-                                  •
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="radar-ticker-track" aria-hidden="true">
-                            {newsItems.map((item) => (
-                              <div
-                                key={`duplicate-${item.id}`}
-                                className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
-                              >
-                                <span className="font-medium whitespace-nowrap">
-                                  {cleanNewsTitle(item.title)}
-                                </span>
-
-                                <span className="text-orange-500 font-bold text-sm">
-                                  •
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <div className="max-w-4xl mb-10 sm:mb-14">
-                <div className="flex items-center gap-3 mb-5">
-                  <span className="w-8 h-px bg-orange-500" />
-
-                  <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] font-bold text-orange-400">
-                    A sua experiência de áudio
-                  </span>
-                </div>
-
-                <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-[-0.05em] leading-[0.95] max-w-4xl">
-                  Música que cria
-                  <span className="block text-zinc-500">
-                    momentos.
-                  </span>
-                </h2>
-
-                <p className="text-sm sm:text-base lg:text-lg text-zinc-500 mt-6 max-w-2xl leading-relaxed">
-                  Rádio, música e experiências sonoras
-                  pensadas para acompanhar cada momento.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    openSection(
-                      'circuito'
-                    )
-                  }
-                  className="group relative overflow-hidden rounded-[28px] lg:col-span-7 min-h-[380px] sm:min-h-[440px] text-left border border-white/[0.08] bg-[#111] transition-all duration-500 hover:border-orange-500/40 hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,115,0,0.25),transparent_45%)]" />
-
-                  <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl group-hover:bg-orange-500/20 transition-all duration-700" />
-
-                  <div className="relative h-full p-7 sm:p-10 flex flex-col justify-between">
-                    <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-orange-500 flex items-center justify-center shadow-xl shadow-orange-500/20">
-                        <Radio className="w-6 h-6 sm:w-7 sm:h-7" />
-                      </div>
-
-                      <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] font-bold text-green-400">
-                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        Online
-                      </span>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-orange-400 mb-3">
-                        Rádio online
-                      </div>
-
-                      <h3 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-[-0.04em] leading-none">
-                        Circuito
-                        <span className="block text-zinc-500">
-                          Interno
-                        </span>
-                      </h3>
-
-                      <p className="text-sm text-zinc-500 mt-4 max-w-md">
-                        Música selecionada para ouvir
-                        sem interrupções, 24 horas por dia.
-                      </p>
-
-                      <div className="flex items-center gap-2 mt-7 text-xs font-bold text-white">
-                        Ouvir agora
-
-                        <span className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-black group-hover:translate-x-1 transition-transform">
-                          <ChevronRight className="w-4 h-4" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    openSection(
-                      'marcoense'
-                    )
-                  }
-                  className="group relative overflow-hidden rounded-[28px] lg:col-span-5 min-h-[380px] sm:min-h-[440px] text-left border border-white/[0.08] bg-[#111] transition-all duration-500 hover:border-red-500/40 hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(220,30,50,0.22),transparent_45%)]" />
-
-                  <div className="relative h-full p-7 sm:p-10 flex flex-col justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center">
-                      <Radio className="w-6 h-6 text-red-400" />
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-red-400 mb-3">
-                        Rádio local
-                      </div>
-
-                      <h3 className="text-3xl sm:text-4xl font-black tracking-[-0.04em] leading-none">
-                        Rádio
-                        <span className="block text-zinc-500">
-                          Marcoense
-                        </span>
-                      </h3>
-
-                      <p className="text-sm text-zinc-500 mt-4">
-                        Emissão em direto • 93.3 FM
-                      </p>
-
-                      <div className="flex items-center gap-2 mt-7 text-xs font-bold text-white">
-                        Ouvir rádio
-
-                        <span className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-black group-hover:translate-x-1 transition-transform">
-                          <ChevronRight className="w-4 h-4" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-              </div>
-            </section>
-          )}
-
-        {/* ===================================================
-            RADIO
-            =================================================== */}
-
-        {(section === 'circuito' ||
-          section === 'marcoense') && (
-          <section className="py-6 sm:py-10">
-
-            <button
-              type="button"
-              onClick={goHome}
-              className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-zinc-500 hover:text-white transition-colors mb-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar
-            </button>
-
-            <div
-              className={`relative overflow-hidden rounded-[32px] border border-white/[0.08] ${
-                section === 'marcoense'
-                  ? 'bg-[#120b0d]'
-                  : 'bg-[#120d08]'
-              }`}
-            >
-              <div
-                className={`absolute inset-0 ${
-                  section === 'marcoense'
-                    ? 'bg-[radial-gradient(circle_at_50%_0%,rgba(220,30,50,0.18),transparent_55%)]'
-                    : 'bg-[radial-gradient(circle_at_50%_0%,rgba(255,115,0,0.22),transparent_55%)]'
-                }`}
-              />
-
-              <div
-                className={`relative grid ${
-                  carMode
-                    ? 'grid-cols-1'
-                    : 'lg:grid-cols-[1fr_0.9fr]'
-                }`}
-              >
-
-                <div className="min-h-[420px] sm:min-h-[520px] lg:min-h-[650px] flex items-center justify-center p-8 sm:p-12">
-                  <div
-                    className={`relative ${
-                      carMode
-                        ? 'w-56 h-56 sm:w-72 sm:h-72'
-                        : 'w-64 h-64 sm:w-80 sm:h-80 lg:w-[420px] lg:h-[420px]'
-                    } rounded-[32px] overflow-hidden border border-white/10 shadow-2xl`}
-                  >
-                    {audioSource ===
-                      'circuito' &&
-                    section ===
-                      'circuito' &&
-                    nowPlaying?.art ? (
-                      <img
-                        src={
-                          nowPlaying.art
-                        }
-                        alt={`${nowPlaying.artist} - ${nowPlaying.title}`}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <>
-                        <div
-                          className={`absolute inset-0 ${
-                            section ===
-                            'marcoense'
-                              ? 'bg-gradient-to-br from-red-600/40 via-red-950 to-black'
-                              : 'bg-gradient-to-br from-orange-500/40 via-orange-950 to-black'
-                          }`}
-                        />
-
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Radio
-                            className={`${
-                              section ===
-                              'marcoense'
-                                ? 'text-red-400'
-                                : 'text-orange-400'
-                            } ${
-                              carMode
-                                ? 'w-28 h-28'
-                                : 'w-32 h-32 sm:w-40 sm:h-40'
-                            } ${
-                              playing
-                                ? 'animate-pulse'
-                                : ''
-                            }`}
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {playing && (
-                      <div className="absolute inset-0 border-2 border-white/10 rounded-[32px]" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col justify-center px-6 pb-10 lg:px-12 lg:py-12">
-                  <div className="mb-8">
-                    <div
-                      className={`text-[10px] uppercase tracking-[0.3em] font-bold mb-3 ${
-                        section ===
-                        'marcoense'
-                          ? 'text-red-400'
-                          : 'text-orange-400'
-                      }`}
-                    >
-                      {section ===
-                      'marcoense'
-                        ? 'Rádio local'
-                        : 'Emissão online'}
-                    </div>
-
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-[-0.04em] leading-none">
-                      {section ===
-                      'marcoense'
-                        ? 'Rádio Marcoense'
-                        : 'Circuito Interno'}
-                    </h2>
-
-                    <p className="text-sm text-zinc-500 mt-3">
-                      {section ===
-                      'marcoense'
-                        ? 'Emissão em direto • 93.3 FM'
-                        : 'Música selecionada • 24/7'}
-                    </p>
-                  </div>
-
-                  {section ===
-                    'circuito' &&
-                    playerMode ===
-                      'radio' &&
-                    audioSource ===
-                      'circuito' &&
-                    nowPlaying && (
-                      <div className="mb-8">
-                        <div className="text-[9px] uppercase tracking-[0.3em] font-bold text-orange-400 mb-3">
-                          A tocar agora
-                        </div>
-
-                        <div className="text-2xl sm:text-3xl font-black tracking-tight">
-                          {
-                            nowPlaying.title
-                          }
-                        </div>
-
-                        <div className="text-base text-zinc-400 mt-1">
-                          {
-                            nowPlaying.artist
-                          }
-                        </div>
-
-                        {nowPlaying.album && (
-                          <div className="text-xs text-zinc-600 mt-2">
-                            {
-                              nowPlaying.album
-                            }
-                          </div>
-                        )}
-
-                        <div className="mt-6">
-                          <div className="flex justify-between text-[10px] text-zinc-600 mb-2">
-                            <span>
-                              {formatTime(
-                                songElapsed
-                              )}
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  {newsItems.length > 0 && (
+                    <div className="radar-ticker">
+                      <div className="radar-ticker-track">
+                        {newsItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {cleanNewsTitle(item.title)}
                             </span>
-
-                            <span>
-                              -
-                              {formatTime(
-                                songRemaining
-                              )}
+                            <span className="text-orange-500 font-bold text-sm">
+                              •
                             </span>
                           </div>
+                        ))}
+                      </div>
 
-                          <div className="h-1 bg-white/[0.08] rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-orange-500 transition-all duration-1000"
-                              style={{
-                                width: `${progress}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-
-                        {nextSong && (
-                          <div className="mt-5 text-xs text-zinc-600">
-                            <span className="uppercase tracking-wider text-[9px]">
-                              A seguir
+                      <div className="radar-ticker-track" aria-hidden="true">
+                        {newsItems.map((item) => (
+                          <div
+                            key={`duplicate-${item.id}`}
+                            className="inline-flex items-center gap-4 text-base sm:text-lg text-zinc-200"
+                          >
+                            <span className="font-medium whitespace-nowrap">
+                              {cleanNewsTitle(item.title)}
                             </span>
-
-                            <div className="mt-1 text-zinc-400">
-                              <span className="font-semibold text-zinc-300">
-                                {
-                                  nextSong.artist
-                                }
-                              </span>
-
-                              {' — '}
-
-                              {
-                                nextSong.title
-                              }
-                            </div>
+                            <span className="text-orange-500 font-bold text-sm">
+                              •
+                            </span>
                           </div>
-                        )}
+                        ))}
                       </div>
-                    )}
-
-                  <div className="min-h-[24px] mb-5">
-                    {loading && (
-                      <p
-                        className={`text-xs animate-pulse ${
-                          section ===
-                          'marcoense'
-                            ? 'text-red-400'
-                            : 'text-orange-400'
-                        }`}
-                      >
-                        A ligar à emissão...
-                      </p>
-                    )}
-
-                    {!loading &&
-                      error && (
-                        <p className="text-xs text-red-400">
-                          Não foi possível ligar à emissão.
-                        </p>
-                      )}
-
-                    {!loading &&
-                      !error &&
-                      playing && (
-                        <p
-                          className={`text-xs font-bold ${
-                            section ===
-                            'marcoense'
-                              ? 'text-red-400'
-                              : 'text-orange-400'
-                          }`}
-                        >
-                          ● EM EMISSÃO
-                        </p>
-                      )}
-
-                    {!loading &&
-                      !error &&
-                      !playing && (
-                        <p className="text-xs text-zinc-600">
-                          Emissão parada
-                        </p>
-                      )}
-                  </div>
-
-                  <div className="flex items-center gap-5">
-                    <button
-                      type="button"
-                      onClick={
-                        togglePlay
-                      }
-                      disabled={
-                        loading
-                      }
-                      aria-label={
-                        playing
-                          ? 'Pausar rádio'
-                          : 'Tocar rádio'
-                      }
-                      className={`shrink-0 ${
-                        section ===
-                        'marcoense'
-                          ? 'bg-red-500 hover:bg-red-400 shadow-red-500/20'
-                          : 'bg-orange-500 hover:bg-orange-400 shadow-orange-500/20'
-                      } ${
-                        carMode
-                          ? 'w-24 h-24'
-                          : 'w-16 h-16'
-                      } rounded-full flex items-center justify-center text-black shadow-xl active:scale-95 transition-all disabled:opacity-60`}
-                    >
-                      {playing ? (
-                        <Pause
-                          className={
-                            carMode
-                              ? 'w-10 h-10'
-                              : 'w-7 h-7'
-                          }
-                        />
-                      ) : (
-                        <Play
-                          className={
-                            carMode
-                              ? 'w-10 h-10 ml-1'
-                              : 'w-7 h-7 ml-1'
-                          }
-                        />
-                      )}
-                    </button>
-
-                    {!carMode && (
-                      <div className="flex items-center gap-3 flex-1 max-w-xs">
-                        <button
-                          type="button"
-                          onClick={
-                            toggleMute
-                          }
-                          aria-label={
-                            muted
-                              ? 'Ativar som'
-                              : 'Silenciar'
-                          }
-                          className="text-zinc-500 hover:text-white transition-colors"
-                        >
-                          {muted ||
-                          volume ===
-                            0 ? (
-                            <VolumeX className="w-5 h-5" />
-                          ) : (
-                            <Volume2 className="w-5 h-5" />
-                          )}
-                        </button>
-
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          value={
-                            muted
-                              ? 0
-                              : volume
-                          }
-                          onChange={
-                            handleVolumeChange
-                          }
-                          aria-label="Volume"
-                          className="w-full accent-orange-500"
-                        />
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-
-            {section ===
-              'marcoense' && (
-              <section className="mt-6 rounded-[28px] border border-white/[0.07] bg-[#101010] p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-red-400" />
-                  </div>
-
-                  <div>
-                    <h3 className="font-black text-xl">
-                      Programação
-                    </h3>
-
-                    <p className="text-xs text-zinc-600 mt-0.5">
-                      Rádio Marcoense
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {SCHEDULE.map(
-                    (
-                      item
-                    ) => (
-                      <div
-                        key={
-                          item.id
-                        }
-                        className="group rounded-2xl border border-white/[0.06] bg-white/[0.025] p-5 hover:bg-white/[0.05] hover:border-red-500/20 transition-all"
-                      >
-                        <div className="text-[9px] uppercase tracking-[0.18em] font-bold text-red-400">
-                          {
-                            item.day
-                          }
-                        </div>
-
-                        <div className="text-xs text-zinc-600 mt-1">
-                          {
-                            item.time
-                          }
-                        </div>
-
-                        <h4 className="font-bold text-sm mt-4">
-                          {
-                            item.title
-                          }
-                        </h4>
-
-                        <p className="text-xs text-zinc-500 leading-relaxed mt-2">
-                          {
-                            item.description
-                          }
-                        </p>
-                      </div>
-                    )
-                  )}
-                </div>
-              </section>
-            )}
           </section>
-        )}
 
-      </main>
+          <div className="max-w-4xl mb-8 sm:mb-12">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-8 h-px bg-orange-500" />
+              <span className="text-[10px] sm:text-xs uppercase tracking-[0.35em] font-bold text-orange-400">
+                A sua experiência de áudio
+              </span>
+            </div>
 
-      {/* =====================================================
-          MOBILE PLAYER
-          ===================================================== */}
+            <h2 className="text-3xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]">
+              Música que cria <span className="text-zinc-500">momentos.</span>
+            </h2>
+          </div>
 
-      {playing &&
-        !carMode && (
+          {/* CAIXAS DOS PLAYERS NA PÁGINA PRINCIPAL */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+            
+            {/* CAIXA 1: RÁDIO CIRCUITO INTERNO */}
+            <div
+              onClick={() => toggleBox('circuito')}
+              className={`relative overflow-hidden rounded-[28px] lg:col-span-7 border border-white/[0.08] bg-[#111] p-6 sm:p-8 cursor-pointer transition-all duration-300 ${
+                expandedBox === 'circuito'
+                  ? 'border-orange-500/50 shadow-2xl shadow-orange-500/10 ring-1 ring-orange-500/20'
+                  : 'hover:border-white/20'
+              }`}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,115,0,0.15),transparent_45%)]" />
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                      <Radio className="w-6 h-6 text-black" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-orange-400">
+                        Rádio Online
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                        Circuito Interno
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {playing && audioSource === 'circuito' && (
+                      <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] font-bold text-green-400">
+                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                        A Tocar
+                      </span>
+                    )}
+                    <span className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400">
+                      {expandedBox === 'circuito' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </span>
+                  </div>
+                </div>
+
+                {expandedBox === 'circuito' ? (
+                  <div className="mt-6 pt-6 border-t border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
+                    {nowPlaying ? (
+                      <div className="mb-6 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4 sm:p-5 flex gap-4 items-center">
+                        {nowPlaying.art ? (
+                          <img src={nowPlaying.art} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0" />
+                        ) : null}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-orange-400 mb-1">
+                            A tocar agora
+                          </div>
+                          <div className="text-base sm:text-lg font-bold truncate">{nowPlaying.title}</div>
+                          <div className="text-xs sm:text-sm text-zinc-400 truncate">{nowPlaying.artist}</div>
+
+                          <div className="mt-3">
+                            <div className="flex justify-between text-[10px] text-zinc-500 mb-1">
+                              <span>{formatTime(songElapsed)}</span>
+                              <span>-{formatTime(songRemaining)}</span>
+                            </div>
+                            <div className="h-1 bg-white/[0.08] rounded-full overflow-hidden">
+                              <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-400 mb-6">Música selecionada para ouvir sem interrupções, 24 horas por dia.</p>
+                    )}
+
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={(e) => togglePlaySource('circuito', e)}
+                          disabled={loading && audioSource === 'circuito'}
+                          className="w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-400 text-black flex items-center justify-center shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+                          aria-label="Tocar Rádio Circuito Interno"
+                        >
+                          {playing && audioSource === 'circuito' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                        </button>
+                        <div>
+                          <div className="text-xs font-bold">
+                            {playing && audioSource === 'circuito' ? '● EM EMISSÃO' : 'Iniciar Emissão'}
+                          </div>
+                          <div className="text-[10px] text-zinc-500">
+                            {loading && audioSource === 'circuito' ? 'A ligar...' : '24 Horas no Ar'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!carMode && (
+                        <div className="flex items-center gap-2 max-w-[140px]">
+                          <button type="button" onClick={toggleMute} className="text-zinc-400 hover:text-white">
+                            {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={muted ? 0 : volume}
+                            onChange={handleVolumeChange}
+                            className="w-full accent-orange-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-2">Clique na caixa para abrir o player da rádio</p>
+                )}
+              </div>
+            </div>
+
+            {/* CAIXA 2: RÁDIO MARCOENSE */}
+            <div
+              onClick={() => toggleBox('marcoense')}
+              className={`relative overflow-hidden rounded-[28px] lg:col-span-5 border border-white/[0.08] bg-[#111] p-6 sm:p-8 cursor-pointer transition-all duration-300 ${
+                expandedBox === 'marcoense'
+                  ? 'border-red-500/50 shadow-2xl shadow-red-500/10 ring-1 ring-red-500/20'
+                  : 'hover:border-white/20'
+              }`}
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(220,30,50,0.15),transparent_45%)]" />
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+                      <Radio className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-red-400">
+                        Rádio Local
+                      </div>
+                      <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
+                        Rádio Marcoense
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {playing && audioSource === 'marcoense' && (
+                      <span className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] font-bold text-red-400">
+                        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                        A Tocar
+                      </span>
+                    )}
+                    <span className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400">
+                      {expandedBox === 'marcoense' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </span>
+                  </div>
+                </div>
+
+                {expandedBox === 'marcoense' ? (
+                  <div className="mt-6 pt-6 border-t border-white/[0.08]" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-xs text-zinc-400 mb-6">Emissão regional em direto na frequência <strong className="text-white">93.3 FM</strong>.</p>
+
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={(e) => togglePlaySource('marcoense', e)}
+                          disabled={loading && audioSource === 'marcoense'}
+                          className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-400 text-black flex items-center justify-center shadow-lg shadow-red-500/20 active:scale-95 transition-all"
+                          aria-label="Tocar Rádio Marcoense"
+                        >
+                          {playing && audioSource === 'marcoense' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                        </button>
+                        <div>
+                          <div className="text-xs font-bold">
+                            {playing && audioSource === 'marcoense' ? '● EM EMISSÃO' : 'Iniciar 93.3 FM'}
+                          </div>
+                          <div className="text-[10px] text-zinc-500">
+                            {loading && audioSource === 'marcoense' ? 'A ligar...' : 'Direto de Marco de Canaveses'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!carMode && (
+                        <div className="flex items-center gap-2 max-w-[140px]">
+                          <button type="button" onClick={toggleMute} className="text-zinc-400 hover:text-white">
+                            {muted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={muted ? 0 : volume}
+                            onChange={handleVolumeChange}
+                            className="w-full accent-red-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.02] border border-white/[0.05] p-4">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-red-400 uppercase tracking-wider mb-3">
+                        <Calendar className="w-3.5 h-3.5" /> Programação em Destaque
+                      </div>
+                      <div className="space-y-3">
+                        {SCHEDULE.map((item) => (
+                          <div key={item.id} className="text-xs border-b border-white/[0.04] pb-2 last:border-none">
+                            <div className="text-zinc-400 font-semibold">{item.title}</div>
+                            <div className="text-[10px] text-zinc-600">{item.day} • {item.time}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500 mt-2">Clique na caixa para abrir o player da rádio</p>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* CONTACTO WHATSAPP */}
+          <section className="pt-4">
+            <a
+              href="https://wa.me/351963350373?text=Ol%C3%A1%20Paulo%21%20Estou%20a%20ouvir%20o%20Circuito%20Interno%20atrav%C3%A9s%20da%20app%20e%20queria%20deixar%20uma%20mensagem."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 w-full sm:w-auto sm:max-w-sm mx-auto px-5 py-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all group"
+            >
+              <MessageCircle className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-bold">Conversar com o Circuito Interno</span>
+              <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+            </a>
+          </section>
+
+        </main>
+
+        {/* PLAYER FLUTUANTE EM MOBILE */}
+        {playing && !carMode && (
           <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 p-3">
             <div className="rounded-2xl border border-white/10 bg-[#151515]/95 backdrop-blur-2xl shadow-2xl p-3 flex items-center gap-3">
-
-              <div className="w-11 h-11 rounded-xl overflow-hidden bg-zinc-800 shrink-0">
-                {playerMode ===
-                  'radio' &&
-                nowPlaying?.art ? (
-                  <img
-                    src={
-                      nowPlaying.art
-                    }
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-zinc-800 shrink-0 flex items-center justify-center">
+                {audioSource === 'circuito' && nowPlaying?.art ? (
+                  <img src={nowPlaying.art} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Radio className="w-5 h-5 text-orange-400" />
-                  </div>
+                  <Radio className={`w-5 h-5 ${audioSource === 'marcoense' ? 'text-red-400' : 'text-orange-400'}`} />
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold truncate">
-                  {section ===
-                  'marcoense'
-                    ? 'Rádio Marcoense'
-                    : nowPlaying?.title ||
-                      'Circuito Interno'}
+                  {audioSource === 'marcoense' ? 'Rádio Marcoense' : nowPlaying?.title || 'Circuito Interno'}
                 </div>
-
-                <div className="text-[10px] text-zinc-500 truncate">
-                  {section ===
-                  'circuito'
-                    ? nowPlaying?.artist ||
-                      'Em emissão'
-                    : '93.3 FM'}
+                <div className="text-[10px] text-zinc-400 truncate">
+                  {audioSource === 'circuito' ? nowPlaying?.artist || 'Em emissão' : '93.3 FM'}
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  togglePlay
-                }
-                className="w-10 h-10 rounded-full bg-orange-500 text-black flex items-center justify-center shrink-0"
+                onClick={(e) => togglePlaySource(audioSource, e)}
+                className={`w-10 h-10 rounded-full text-black flex items-center justify-center shrink-0 ${
+                  audioSource === 'marcoense' ? 'bg-red-500' : 'bg-orange-500'
+                }`}
                 aria-label="Pausar"
               >
                 <Pause className="w-4 h-4" />
@@ -1776,37 +940,8 @@ export default function App() {
           </div>
         )}
 
-      {/* =====================================================
-          CONTACTO WHATSAPP
-          ===================================================== */}
-
-      <section className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
-        <a
-          href="https://wa.me/351963350373?text=Ol%C3%A1%20Paulo%21%20Estou%20a%20ouvir%20o%20Circuito%20Interno%20atrav%C3%A9s%20da%20app%20e%20queria%20deixar%20uma%20mensagem."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-3 w-full sm:w-auto sm:max-w-sm mx-auto px-5 py-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white transition-all group"
-        >
-          <MessageCircle className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
-
-          <span className="text-sm font-bold">
-            Conversar com o Circuito Interno
-          </span>
-
-          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
-        </a>
-      </section>
-
-      {/* =====================================================
-          AUDIO
-          ===================================================== */}
-
-      <audio
-        ref={audioRef}
-        preload="none"
-        playsInline
-      />
-    </div>
+        <audio ref={audioRef} preload="none" playsInline />
+      </div>
     </>
   );
 }
