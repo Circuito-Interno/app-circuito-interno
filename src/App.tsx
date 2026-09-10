@@ -387,41 +387,42 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
 /* =========================================================
-     MEDIA SESSION API — LOCK SCREEN DO IOS / ANDROID
+     MEDIA SESSION API — LOCK SCREEN FORMATADO COM SCROLL
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
-    // Configuração dos Metadados (Capa, Título e Artista)
     if (audioSource === 'circuito') {
+      const songInfo = nowPlaying?.artist && nowPlaying?.title
+        ? `${nowPlaying.artist} • ${nowPlaying.title}`
+        : 'Música que cria momentos';
+
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: nowPlaying?.title || 'Emissão em Direto',
-        artist: nowPlaying?.artist || 'Rádio Circuito Interno',
-        album: 'Música que cria momentos',
+        title: 'Circuito Interno',
+        artist: songInfo,
+        album: 'Rádio Online',
         artwork: [
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          { src: '/icons/artwork-solid.png', sizes: '512x512', type: 'image/png' },
         ],
       });
     } else {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Rádio Marcoense 93.3 FM',
-        artist: 'Emissão Regional',
-        album: 'Direto de Marco de Canaveses',
+        title: 'Rádio Marcoense',
+        artist: '93.3 FM • Emissão Regional',
+        album: 'Rádio Local',
         artwork: [
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          { src: '/icons/artwork-solid.png', sizes: '512x512', type: 'image/png' },
         ],
       });
     }
 
-    // Remoção dos botões de retroceder/avançar 10 segundos no ecrã de bloqueio
+    // Remoção dos botões de 10 segundos no leitor
     navigator.mediaSession.setActionHandler('seekbackward', null);
     navigator.mediaSession.setActionHandler('seekforward', null);
     navigator.mediaSession.setActionHandler('previoustrack', null);
     navigator.mediaSession.setActionHandler('nexttrack', null);
 
-    // Mapeamento dos botões Play / Pause no ecrã de bloqueio
+    // Mapeamento dos botões Play / Pause
     navigator.mediaSession.setActionHandler('play', () => {
       if (audioRef.current) {
         void audioRef.current.play();
