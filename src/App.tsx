@@ -389,7 +389,7 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
   /* =========================================================
-     MEDIA SESSION API — BACKGROUND PLAYBACK STÁVEL NO IOS
+     MEDIA SESSION API — LOCK SCREEN PNG & BACKGROUND STABLE
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -399,13 +399,13 @@ export default function App() {
       ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
       : '93.3 FM • Emissão Regional';
 
-    const artworkUrl = isCircuito ? '/icons/artwork-solid.png' : MARCOENSE_LOGO_SVG;
+    const artworkUrl = isCircuito ? '/icons/artwork-solid.png' : '/icons/marcoense-solid.png';
 
     if (navigator.mediaSession.metadata) {
       navigator.mediaSession.metadata.title = isCircuito ? 'Circuito Interno' : 'Rádio Marcoense';
       navigator.mediaSession.metadata.artist = artistText;
       navigator.mediaSession.metadata.artwork = [
-        { src: artworkUrl, sizes: '512x512', type: isCircuito ? 'image/png' : 'image/svg+xml' },
+        { src: artworkUrl, sizes: '512x512', type: 'image/png' },
       ];
       return;
     }
@@ -415,7 +415,7 @@ export default function App() {
       artist: artistText,
       album: isCircuito ? 'Rádio Online' : 'Marco de Canaveses',
       artwork: [
-        { src: artworkUrl, sizes: '512x512', type: isCircuito ? 'image/png' : 'image/svg+xml' },
+        { src: artworkUrl, sizes: '512x512', type: 'image/png' },
       ],
     });
 
