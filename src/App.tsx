@@ -386,7 +386,7 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
   /* =========================================================
-     MEDIA SESSION API — ATUALIZAÇÃO SUAVE SEM QUEBRA DE SOM
+     MEDIA SESSION API — BACKGROUND PLAYBACK STÁVEL NO IOS
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -396,24 +396,25 @@ export default function App() {
       ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
       : '93.3 FM • Emissão Regional';
 
-    // Se já existe metadata ativa, atualiza só o texto para o Safari não cortar o som em background
+    const artworkUrl = isCircuito
+      ? '/icons/artwork-solid.png'
+      : 'https://www.radiomarcoense.pt/wp-content/uploads/2021/03/cropped-logo-radio-marcoense-192x192.png';
+
     if (navigator.mediaSession.metadata) {
       navigator.mediaSession.metadata.title = isCircuito ? 'Circuito Interno' : 'Rádio Marcoense';
       navigator.mediaSession.metadata.artist = artistText;
+      navigator.mediaSession.metadata.artwork = [
+        { src: artworkUrl, sizes: '512x512', type: 'image/png' },
+      ];
       return;
     }
 
-    // Inicialização da Media Session (primeira vez que toca)
     navigator.mediaSession.metadata = new MediaMetadata({
       title: isCircuito ? 'Circuito Interno' : 'Rádio Marcoense',
       artist: artistText,
       album: isCircuito ? 'Rádio Online' : 'Marco de Canaveses',
       artwork: [
-        {
-          src: isCircuito ? '/icons/artwork-solid.png' : '/icons/marcoense-solid.png',
-          sizes: '512x512',
-          type: 'image/png',
-        },
+        { src: artworkUrl, sizes: '512x512', type: 'image/png' },
       ],
     });
 
@@ -429,7 +430,7 @@ export default function App() {
         if (audioRef.current) audioRef.current.pause();
       });
     } catch (e) {
-      // Ignora avisos de handlers
+      // Ignora avisos
     }
   }, [audioSource, nowPlaying?.artist, nowPlaying?.title]);
 
@@ -843,9 +844,9 @@ export default function App() {
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shrink-0">
                       <img 
-                        src="/icons/marcoense-logo.png" 
+                        src="https://www.radiomarcoense.pt/wp-content/uploads/2021/03/cropped-logo-radio-marcoense-192x192.png" 
                         alt="Rádio Marcoense 93.3 FM" 
                         className="w-full h-full object-cover"
                       />
