@@ -386,22 +386,31 @@ export default function App() {
   }, [playing, playerMode, audioSource]);
 
   /* =========================================================
-     MEDIA SESSION API — BACKGROUND PLAYBACK ESTÁVEL NO IOS
+     MEDIA SESSION API — ATUALIZAÇÃO SUAVE SEM QUEBRA DE SOM
      ========================================================= */
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
     const isCircuito = audioSource === 'circuito';
+    const artistText = isCircuito
+      ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
+      : '93.3 FM • Emissão Regional';
 
+    // Se já existe metadata ativa, atualiza só o texto para o Safari não cortar o som em background
+    if (navigator.mediaSession.metadata) {
+      navigator.mediaSession.metadata.title = isCircuito ? 'Circuito Interno' : 'Rádio Marcoense';
+      navigator.mediaSession.metadata.artist = artistText;
+      return;
+    }
+
+    // Inicialização da Media Session (primeira vez que toca)
     navigator.mediaSession.metadata = new MediaMetadata({
       title: isCircuito ? 'Circuito Interno' : 'Rádio Marcoense',
-      artist: isCircuito
-        ? (nowPlaying?.artist && nowPlaying?.title ? `${nowPlaying.artist} • ${nowPlaying.title}` : 'Música que cria momentos')
-        : '93.3 FM • Emissão Regional',
+      artist: artistText,
       album: isCircuito ? 'Rádio Online' : 'Marco de Canaveses',
       artwork: [
         {
-          src: isCircuito ? '/icons/artwork-solid.png?v=200' : '/icons/marcoense-solid.png?v=200',
+          src: isCircuito ? '/icons/artwork-solid.png' : '/icons/marcoense-solid.png',
           sizes: '512x512',
           type: 'image/png',
         },
@@ -413,11 +422,6 @@ export default function App() {
       navigator.mediaSession.setActionHandler('seekforward', null);
       navigator.mediaSession.setActionHandler('previoustrack', null);
       navigator.mediaSession.setActionHandler('nexttrack', null);
-    } catch (e) {
-      // Ignora erro
-    }
-
-    try {
       navigator.mediaSession.setActionHandler('play', () => {
         if (audioRef.current) void audioRef.current.play();
       });
@@ -425,7 +429,7 @@ export default function App() {
         if (audioRef.current) audioRef.current.pause();
       });
     } catch (e) {
-      // Ignora erro
+      // Ignora avisos de handlers
     }
   }, [audioSource, nowPlaying?.artist, nowPlaying?.title]);
 
