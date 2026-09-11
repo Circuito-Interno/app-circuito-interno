@@ -962,12 +962,12 @@ export default function App() {
             <div className="rounded-2xl border border-white/10 bg-[#151515]/95 backdrop-blur-2xl shadow-2xl p-3 flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl overflow-hidden bg-zinc-800 shrink-0 flex items-center justify-center">
                 {audioSource === 'circuito' && nowPlaying?.art ? (
-                  <img src={nowPlaying.art} alt="" className="w-full h-full object-cover" />
-                ) : audioSource === 'marcoense' ? (
-                  <img src={MARCOENSE_LOGO_SVG} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <Radio className="w-5 h-5 text-orange-400" />
-                )}
+  <img src={nowPlaying.art} alt="" className="w-full h-full object-cover" />
+) : audioSource === 'marcoense' ? (
+  <img src="/icons/marcoense-logo.png" alt="" className="w-full h-full object-cover" />
+) : (
+  <Radio className="w-5 h-5 text-orange-400" />
+)}
               </div>
 
               <div className="min-w-0 flex-1">
