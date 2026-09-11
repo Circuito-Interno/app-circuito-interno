@@ -92,7 +92,6 @@ const NOW_PLAYING_URL =
   'https://azuracast.rhoster.pt/api/nowplaying/circuito_interno';
 
 // Imagem SVG nativa oficial da Rádio Marcoense 93.3 FM (Offline & CORS Free)
-const MARCOENSE_LOGO_SVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23080808'/><circle cx='256' cy='256' r='200' fill='%230066CC' stroke='%23ffffff' stroke-width='12'/><circle cx='256' cy='256' r='140' fill='%23101828'/><rect x='216' y='140' width='80' height='120' rx='40' fill='%23E1E1E6'/><text x='256' y='210' font-family='sans-serif' font-weight='bold' font-size='32' fill='%230066CC' text-anchor='middle'>93.3</text></svg>`;
 
 /* =========================================================
    PROGRAMAÇÃO
