@@ -846,12 +846,12 @@ export default function App() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shrink-0">
-                      <img 
-                        src={MARCOENSE_LOGO_SVG} 
-                        alt="Rádio Marcoense 93.3 FM" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+  <img 
+    src="/icons/marcoense-logo.png" 
+    alt="Rádio Marcoense 93.3 FM" 
+    className="w-full h-full object-cover"
+  />
+</div>
                     <div>
                       <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-red-400">
                         Rádio Local
